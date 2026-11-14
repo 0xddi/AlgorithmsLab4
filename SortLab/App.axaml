@@ -1,0 +1,196 @@
+<Application x:Class="SortLab.App"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:SortLab.Controls"
+             x:CompileBindings="False">
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="WindowBgBrush">#EEF1F7</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBgBrush">#FFFFFF</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBorderBrush">#DDE3EE</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelBgBrush">#F2F5FA</SolidColorBrush>
+          <SolidColorBrush x:Key="SubtleTextBrush">#5A6478</SolidColorBrush>
+          <SolidColorBrush x:Key="AccentBrush">#4F6EF7</SolidColorBrush>
+          <SolidColorBrush x:Key="ChipBgBrush">#E7EBF4</SolidColorBrush>
+          <SolidColorBrush x:Key="HighlightBrush">#FFD54F</SolidColorBrush>
+          <SolidColorBrush x:Key="DangerBrush">#E53935</SolidColorBrush>
+          <SolidColorBrush x:Key="OkBrush">#2E7D32</SolidColorBrush>
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="WindowBgBrush">#191E26</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBgBrush">#212836</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBorderBrush">#333C4E</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelBgBrush">#2A3242</SolidColorBrush>
+          <SolidColorBrush x:Key="SubtleTextBrush">#A9B2C4</SolidColorBrush>
+          <SolidColorBrush x:Key="AccentBrush">#7C93FF</SolidColorBrush>
+          <SolidColorBrush x:Key="ChipBgBrush">#2E3646</SolidColorBrush>
+          <SolidColorBrush x:Key="HighlightBrush">#FFD54F</SolidColorBrush>
+          <SolidColorBrush x:Key="DangerBrush">#FF6B6B</SolidColorBrush>
+          <SolidColorBrush x:Key="OkBrush">#7CD47C</SolidColorBrush>
+        </ResourceDictionary>
+
+      </ResourceDictionary.ThemeDictionaries>
+
+      <!-- Отключаем резерв 32px под иконку сортировки в шапках колонок DataGrid:
+           колонки у нас не сортируются, а резерв съедал место у заголовков -->
+      <x:Double x:Key="DataGridSortIconMinWidth">0</x:Double>
+
+      <!-- Шаблон заголовка колонки DataGrid: переносится по словам вместо обрезки -->
+      <DataTemplate x:Key="GridHeaderTemplate">
+        <TextBlock Text="{Binding}" TextWrapping="Wrap" VerticalAlignment="Center" />
+      </DataTemplate>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+    <!-- Обязательный include: без него DataGrid не имеет шаблона и не отображает строки -->
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+
+    <!-- Карточки -->
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource CardBgBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="12" />
+      <Setter Property="BoxShadow" Value="0 1 4 0 #14000000" />
+    </Style>
+
+    <Style Selector="Border.card.accentTop">
+      <Setter Property="BorderThickness" Value="0,2,0,0" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.h1">
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+
+    <Style Selector="TextBlock.h2">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.subtle">
+      <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <!-- Акцентная кнопка -->
+    <Style Selector="Button.accent">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="MinHeight" Value="32" />
+    </Style>
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Opacity" Value="0.88" />
+    </Style>
+
+    <Style Selector="Button.danger">
+      <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="MinHeight" Value="32" />
+    </Style>
+
+    <!-- Подсветка элементов визуализации -->
+    <Style Selector="controls|HighlightBorder">
+      <Setter Property="Background" Value="{DynamicResource ChipBgBrush}" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Padding" Value="7,3" />
+      <Setter Property="Margin" Value="1.5" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="controls|HighlightBorder.hl-compare">
+      <Setter Property="Background" Value="{DynamicResource HighlightBrush}" />
+      <Setter Property="Foreground" Value="#212121" />
+    </Style>
+    <Style Selector="controls|HighlightBorder.hl-move">
+      <Setter Property="Background" Value="{DynamicResource OkBrush}" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+
+    <!-- Дополнительный отступ контента вкладок -->
+    <Style Selector="UserControl.tabRoot">
+      <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource CardBorderBrush}" />
+      <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource CardBorderBrush}" />
+      <Setter Property="RowBackground" Value="Transparent" />
+    </Style>
+
+    <!-- Тематические стили DataGrid: шапка, ячейки и строки следуют цветам приложения -->
+    <Style Selector="DataGridColumnHeader">
+      <Setter Property="Background" Value="{DynamicResource PanelBgBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Padding" Value="6,4" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+    </Style>
+    <Style Selector="DataGridColumnHeader:pointerover">
+      <Setter Property="Background" Value="{DynamicResource PanelBgBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}" />
+    </Style>
+    <Style Selector="DataGridColumnHeader:pointerover /template/ ContentPresenter#PART_ColumnHeaderGripper">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="DataGridCell">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="6,2" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="MinHeight" Value="26" />
+    </Style>
+    <Style Selector="DataGridCell:focus">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="DataGridCell:pointerover">
+      <Setter Property="Background" Value="{DynamicResource PanelBgBrush}" />
+    </Style>
+    <Style Selector="DataGridCell:selected">
+      <Setter Property="Background" Value="{DynamicResource PanelBgBrush}" />
+    </Style>
+    <Style Selector="DataGridRow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="MinHeight" Value="26" />
+    </Style>
+    <Style Selector="DataGridRow:pointerover">
+      <Setter Property="Background" Value="{DynamicResource PanelBgBrush}" />
+    </Style>
+
+    <!-- Компактные таблицы (журнал, эксперименты): мельче шрифт, чтобы текст влезал -->
+    <Style Selector="DataGrid.compact">
+      <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="DataGrid.compact DataGridColumnHeader">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Padding" Value="6,3" />
+      <Setter Property="MinHeight" Value="26" />
+    </Style>
+    <Style Selector="DataGrid.compact DataGridCell">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Padding" Value="5,2" />
+      <Setter Property="MinHeight" Value="24" />
+    </Style>
+  </Application.Styles>
+</Application>

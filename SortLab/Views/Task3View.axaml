@@ -1,0 +1,186 @@
+<UserControl x:Class="SortLab.Views.Task3View"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:SortLab.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1250" d:DesignHeight="720">
+
+  <Grid RowDefinitions="*,Auto,290" RowSpacing="8">
+
+    <!-- ВЕРХНАЯ ЧАСТЬ -->
+    <Grid Grid.Row="0" ColumnDefinitions="320,Auto,*,Auto,450">
+
+      <!-- ЛЕВАЯ ПАНЕЛЬ -->
+      <Border Grid.Column="0" Classes="card">
+        <ScrollViewer>
+          <StackPanel Spacing="8">
+            <TextBlock Text="Текст" Classes="h2" />
+            <TextBox Text="{Binding InputText}" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="120" MaxHeight="220" Watermark="Введите или загрузите текст..." />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Button Content="Из файла..." Click="OnBrowse" />
+              <Button Content="Разобрать" Classes="accent" Command="{Binding ApplyTextCommand}" />
+            </StackPanel>
+            <CheckBox Content="Игнорировать регистр" IsChecked="{Binding IgnoreCase}" />
+            <TextBlock Text="{Binding WordsInfo}" Classes="subtle" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" />
+
+            <Separator Margin="0,2,0,0" />
+            <TextBlock Text="Сгенерировать тестовый текст" Classes="subtle" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <NumericUpDown Minimum="50" Maximum="20000" Increment="50" Value="{Binding GenerateCount}" Width="120" />
+              <TextBlock Text="слов" VerticalAlignment="Center" />
+              <Button Content="Сгенерировать" Command="{Binding GenerateTextCommand}" />
+            </StackPanel>
+
+            <Separator Margin="0,2,0,0" />
+            <TextBlock Text="Алгоритм сортировки слов" Classes="subtle" />
+            <ComboBox ItemsSource="{Binding Algorithms}" SelectedItem="{Binding SelectedAlgorithm}"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*" ColumnSpacing="6" RowSpacing="6">
+              <Button Grid.Row="0" Grid.Column="0" Content="Старт" Classes="accent" HorizontalContentAlignment="Center"
+                      Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}" />
+              <Button Grid.Row="0" Grid.Column="1" Content="Пауза" HorizontalContentAlignment="Center"
+                      Command="{Binding PauseCommand}" IsEnabled="{Binding CanPause}" />
+              <Button Grid.Row="1" Grid.Column="0" Content="Продолжить" HorizontalContentAlignment="Center"
+                      Command="{Binding ContinueCommand}" IsEnabled="{Binding IsPaused}" />
+              <Button Grid.Row="1" Grid.Column="1" Content="Шаг" HorizontalContentAlignment="Center"
+                      Command="{Binding StepCommand}" IsEnabled="{Binding CanStep}" />
+              <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Сброс" Classes="danger" HorizontalContentAlignment="Center"
+                      Command="{Binding ResetCommand}" />
+            </Grid>
+
+            <TextBlock Text="Задержка между шагами (0–2000 мс)" Classes="subtle" Margin="0,4,0,0" />
+            <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}" />
+            <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle" />
+
+            <StackPanel Spacing="3" Margin="0,4,0,0">
+              <TextBlock Text="{Binding ProgressText}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Comparisons, StringFormat='Сравнений: {0}'}" />
+              <TextBlock Text="{Binding Moves, StringFormat='Операций размещения: {0}'}" />
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
+      <GridSplitter Grid.Column="1" Width="6" Background="Transparent" HorizontalAlignment="Stretch" />
+
+      <!-- ЦЕНТР: слова + частоты + пояснение -->
+      <Grid Grid.Column="2" RowDefinitions="*,Auto,Auto,Auto" RowSpacing="6" Margin="8,0,8,0">
+        <Border Grid.Row="0" Classes="card accentTop">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Text="Визуализация слов" Classes="h2" Margin="0,0,0,6" />
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding Chips}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <controls:HighlightBorder>
+                      <TextBlock Text="{Binding Text}" FontSize="12" />
+                    </controls:HighlightBorder>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+
+        <TextBlock Grid.Row="1" Text="Частоты слов" Classes="h2" />
+        <TextBlock Grid.Row="2" Text="{Binding FrequencyInfo}" Classes="subtle" />
+        <Border Grid.Row="3" Classes="card" Padding="4" MaxHeight="200">
+          <DataGrid AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False"
+                    HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                    ItemsSource="{Binding Frequencies}">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Слово" Binding="{Binding Word}" Width="*" />
+              <DataGridTextColumn Header="Частота" Binding="{Binding Count}" Width="90" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </Border>
+      </Grid>
+
+      <GridSplitter Grid.Column="3" Width="6" Background="Transparent" HorizontalAlignment="Stretch" />
+
+      <!-- ПРАВО: пояснение + журнал -->
+      <Grid Grid.Column="4" RowDefinitions="Auto,*" RowSpacing="8">
+        <Border Grid.Row="0" Classes="card" Padding="12,8">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Объяснение простыми словами" Classes="h2" />
+            <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" MinHeight="30" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="1" Classes="card">
+          <controls:LogView />
+        </Border>
+      </Grid>
+    </Grid>
+
+    <GridSplitter Grid.Row="1" Height="6" Background="Transparent" />
+
+    <!-- НИЗ: эксперименты -->
+    <Border Grid.Row="2" Classes="card">
+      <Grid ColumnDefinitions="220,3*,2*" ColumnSpacing="12">
+        <StackPanel Grid.Column="0" Spacing="8">
+          <TextBlock Text="Эксперименты" Classes="h2" />
+          <TextBlock Text="Длины: 100, 500, 1000, 2000, 5000 слов. Показывается среднее время."
+                     Classes="subtle" TextWrapping="Wrap" />
+          <TextBlock Text="Прогонов на алгоритм (1–20)" Classes="subtle" />
+          <NumericUpDown Minimum="1" Maximum="20" Increment="1" Value="{Binding BenchRuns}"
+                         Width="120" HorizontalAlignment="Left" />
+          <Button Content="Запустить эксперименты" Classes="accent" Command="{Binding RunBenchmarkCommand}" IsEnabled="{Binding CanRunBench}" />
+          <Button Content="Отменить" Command="{Binding CancelBenchmarkCommand}" IsEnabled="{Binding BenchRunning}" />
+          <ProgressBar Value="{Binding BenchProgress}" Maximum="100" Height="10" />
+          <TextBlock Text="{Binding BenchStatus}" Classes="subtle" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Border Grid.Column="1" Background="{DynamicResource PanelBgBrush}" CornerRadius="8" Padding="4">
+          <DataGrid Classes="compact" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False"
+                    HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                    ItemsSource="{Binding BenchmarkResults}">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Длина" Binding="{Binding Length}" Width="52"
+                                  HeaderTemplate="{StaticResource GridHeaderTemplate}" />
+              <DataGridTextColumn Header="Алгоритм" Binding="{Binding Algorithm}" Width="*"
+                                  HeaderTemplate="{StaticResource GridHeaderTemplate}" />
+              <DataGridTextColumn Header="Время, мс (сред.)" Binding="{Binding AvgMs, StringFormat=F2}" Width="88"
+                                  HeaderTemplate="{StaticResource GridHeaderTemplate}" />
+              <DataGridTextColumn Header="Минимум, мс" Binding="{Binding MinMs, StringFormat=F2}" Width="80"
+                                  HeaderTemplate="{StaticResource GridHeaderTemplate}" />
+              <DataGridTextColumn Header="Сравнения" Binding="{Binding Comparisons}" Width="88"
+                                  HeaderTemplate="{StaticResource GridHeaderTemplate}" />
+              <DataGridTextColumn Header="Операции" Binding="{Binding Moves}" Width="80"
+                                  HeaderTemplate="{StaticResource GridHeaderTemplate}" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </Border>
+
+        <Grid Grid.Column="2" RowDefinitions="*,*" RowSpacing="8">
+          <Border Grid.Row="0" Background="{DynamicResource PanelBgBrush}" CornerRadius="8">
+            <controls:BarChart Categories="{Binding ChartCategories}" Series="{Binding ChartSeries}"
+                               GridBrush="{Binding Settings.GridBrush}" LabelBrush="{Binding Settings.LabelBrush}"
+                               BarBrush1="{Binding Settings.ChartBrush1}" BarBrush2="{Binding Settings.ChartBrush2}"
+                               BarBrush3="{Binding Settings.ChartBrush3}" BarBrush4="{Binding Settings.ChartBrush4}" />
+          </Border>
+          <Border Grid.Row="1" Background="{DynamicResource PanelBgBrush}" CornerRadius="8">
+            <controls:LineChart Categories="{Binding ChartCategories}" Series="{Binding ChartSeries}"
+                                GridBrush="{Binding Settings.GridBrush}" LabelBrush="{Binding Settings.LabelBrush}"
+                                LineBrush1="{Binding Settings.ChartBrush1}" LineBrush2="{Binding Settings.ChartBrush2}"
+                                LineBrush3="{Binding Settings.ChartBrush3}" LineBrush4="{Binding Settings.ChartBrush4}" />
+          </Border>
+        </Grid>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>
