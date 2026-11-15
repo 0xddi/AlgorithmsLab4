@@ -15,7 +15,8 @@ public class BarChart : Control
     {
         AffectsRender<BarChart>(CategoriesProperty, SeriesProperty,
             GridBrushProperty, LabelBrushProperty,
-            BarBrush1Property, BarBrush2Property, BarBrush3Property, BarBrush4Property);
+            BarBrush1Property, BarBrush2Property, BarBrush3Property, BarBrush4Property,
+            XAxisTitleProperty, YAxisTitleProperty);
     }
 
     public static readonly StyledProperty<IReadOnlyList<string>?> CategoriesProperty =
@@ -39,6 +40,12 @@ public class BarChart : Control
     public static readonly StyledProperty<IBrush?> BarBrush4Property =
         AvaloniaProperty.Register<BarChart, IBrush?>(nameof(BarBrush4));
 
+    public static readonly StyledProperty<string?> XAxisTitleProperty =
+        AvaloniaProperty.Register<BarChart, string?>(nameof(XAxisTitle));
+
+    public static readonly StyledProperty<string?> YAxisTitleProperty =
+        AvaloniaProperty.Register<BarChart, string?>(nameof(YAxisTitle));
+
     public IReadOnlyList<string>? Categories { get => GetValue(CategoriesProperty); set => SetValue(CategoriesProperty, value); }
     public IReadOnlyList<ChartSeriesData>? Series { get => GetValue(SeriesProperty); set => SetValue(SeriesProperty, value); }
     public IBrush? GridBrush { get => GetValue(GridBrushProperty); set => SetValue(GridBrushProperty, value); }
@@ -47,6 +54,8 @@ public class BarChart : Control
     public IBrush? BarBrush2 { get => GetValue(BarBrush2Property); set => SetValue(BarBrush2Property, value); }
     public IBrush? BarBrush3 { get => GetValue(BarBrush3Property); set => SetValue(BarBrush3Property, value); }
     public IBrush? BarBrush4 { get => GetValue(BarBrush4Property); set => SetValue(BarBrush4Property, value); }
+    public string? XAxisTitle { get => GetValue(XAxisTitleProperty); set => SetValue(XAxisTitleProperty, value); }
+    public string? YAxisTitle { get => GetValue(YAxisTitleProperty); set => SetValue(YAxisTitleProperty, value); }
 
     public override void Render(DrawingContext context)
     {
@@ -64,7 +73,11 @@ public class BarChart : Control
             return;
         }
 
-        const double left = 52, right = 12, top = 30, bottom = 26;
+        var yTitle = YAxisTitle;
+        var xTitle = XAxisTitle;
+        double left = 52, right = 12, top = 30, bottom = 26;
+        if (!string.IsNullOrWhiteSpace(yTitle)) left += 22;   // место под вертикальную подпись оси
+        if (!string.IsNullOrWhiteSpace(xTitle)) bottom += 16; // место под подпись оси категорий
         double plotW = Math.Max(10, bounds.Width - left - right);
         double plotH = Math.Max(10, bounds.Height - top - bottom);
 
@@ -123,6 +136,24 @@ public class BarChart : Control
         }
 
         DrawLegend(context, series, typeface, labelBrush);
+
+        // Подписи осей с единицами измерения.
+        if (!string.IsNullOrWhiteSpace(yTitle))
+        {
+            var ft = new FormattedText(yTitle, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                typeface, 11, labelBrush);
+            // Поворачиваем текст на -90°: сначала вращение, затем перенос (вложенные трансформации).
+            var cy = top + plotH / 2;
+            using (context.PushTransform(Matrix.CreateTranslation(new Vector(12, cy + ft.Width / 2))))
+            using (context.PushTransform(Matrix.CreateRotation(-Math.PI / 2)))
+                context.DrawText(ft, new Point(0, 0));
+        }
+        if (!string.IsNullOrWhiteSpace(xTitle))
+        {
+            var ft = new FormattedText(xTitle, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                typeface, 11, labelBrush);
+            context.DrawText(ft, new Point(left + (plotW - ft.Width) / 2, top + plotH + 22));
+        }
     }
 
     private IBrush BarBrush(int index) => index switch
@@ -170,7 +201,8 @@ public class LineChart : Control
     {
         AffectsRender<LineChart>(CategoriesProperty, SeriesProperty,
             GridBrushProperty, LabelBrushProperty,
-            LineBrush1Property, LineBrush2Property, LineBrush3Property, LineBrush4Property);
+            LineBrush1Property, LineBrush2Property, LineBrush3Property, LineBrush4Property,
+            XAxisTitleProperty, YAxisTitleProperty);
     }
 
     public static readonly StyledProperty<IReadOnlyList<string>?> CategoriesProperty =
@@ -194,6 +226,12 @@ public class LineChart : Control
     public static readonly StyledProperty<IBrush?> LineBrush4Property =
         AvaloniaProperty.Register<LineChart, IBrush?>(nameof(LineBrush4));
 
+    public static readonly StyledProperty<string?> XAxisTitleProperty =
+        AvaloniaProperty.Register<LineChart, string?>(nameof(XAxisTitle));
+
+    public static readonly StyledProperty<string?> YAxisTitleProperty =
+        AvaloniaProperty.Register<LineChart, string?>(nameof(YAxisTitle));
+
     public IReadOnlyList<string>? Categories { get => GetValue(CategoriesProperty); set => SetValue(CategoriesProperty, value); }
     public IReadOnlyList<ChartSeriesData>? Series { get => GetValue(SeriesProperty); set => SetValue(SeriesProperty, value); }
     public IBrush? GridBrush { get => GetValue(GridBrushProperty); set => SetValue(GridBrushProperty, value); }
@@ -202,6 +240,8 @@ public class LineChart : Control
     public IBrush? LineBrush2 { get => GetValue(LineBrush2Property); set => SetValue(LineBrush2Property, value); }
     public IBrush? LineBrush3 { get => GetValue(LineBrush3Property); set => SetValue(LineBrush3Property, value); }
     public IBrush? LineBrush4 { get => GetValue(LineBrush4Property); set => SetValue(LineBrush4Property, value); }
+    public string? XAxisTitle { get => GetValue(XAxisTitleProperty); set => SetValue(XAxisTitleProperty, value); }
+    public string? YAxisTitle { get => GetValue(YAxisTitleProperty); set => SetValue(YAxisTitleProperty, value); }
 
     public override void Render(DrawingContext context)
     {
@@ -219,7 +259,11 @@ public class LineChart : Control
             return;
         }
 
-        const double left = 52, right = 12, top = 30, bottom = 26;
+        var yTitle = YAxisTitle;
+        var xTitle = XAxisTitle;
+        double left = 52, right = 12, top = 30, bottom = 26;
+        if (!string.IsNullOrWhiteSpace(yTitle)) left += 22;   // место под вертикальную подпись оси
+        if (!string.IsNullOrWhiteSpace(xTitle)) bottom += 16; // место под подпись оси категорий
         double plotW = Math.Max(10, bounds.Width - left - right);
         double plotH = Math.Max(10, bounds.Height - top - bottom);
 
@@ -276,6 +320,23 @@ public class LineChart : Control
         }
 
         BarChart.DrawLegend(context, series, typeface, labelBrush, LineBrush);
+
+        // Подписи осей с единицами измерения.
+        if (!string.IsNullOrWhiteSpace(yTitle))
+        {
+            var ft = new FormattedText(yTitle, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                typeface, 11, labelBrush);
+            var cy = top + plotH / 2;
+            using (context.PushTransform(Matrix.CreateTranslation(new Vector(12, cy + ft.Width / 2))))
+            using (context.PushTransform(Matrix.CreateRotation(-Math.PI / 2)))
+                context.DrawText(ft, new Point(0, 0));
+        }
+        if (!string.IsNullOrWhiteSpace(xTitle))
+        {
+            var ft = new FormattedText(xTitle, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                typeface, 11, labelBrush);
+            context.DrawText(ft, new Point(left + (plotW - ft.Width) / 2, top + plotH + 22));
+        }
     }
 
     private IBrush LineBrush(int index) => index switch

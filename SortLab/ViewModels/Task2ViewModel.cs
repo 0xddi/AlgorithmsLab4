@@ -37,7 +37,11 @@ public partial class Task2ViewModel : ObservableObject
     private string _statusMessage = "";
 
     [ObservableProperty]
-    private int _selectedSeparatorIndex; // 0 — запятая, 1 — точка с запятой
+    private int _selectedSeparatorIndex; // 0 — авто (по файлу), 1 — запятая, 2 — точка с запятой, 3 — Tab
+
+    /// <summary>Описание фактически используемого разделителя.</summary>
+    [ObservableProperty]
+    private string _separatorInfo = "Разделитель определится по файлу.";
 
     [ObservableProperty]
     private string? _selectedKeyColumn;
@@ -129,18 +133,41 @@ public partial class Task2ViewModel : ObservableObject
 
     partial void OnSelectedSeparatorIndexChanged(int value)
     {
-        // При смене разделителя пробуем перечитать файл.
+        // При смене разделителя (в том числе на «авто») пробуем перечитать файл.
         if (!string.IsNullOrEmpty(_loadedPath) && File.Exists(_loadedPath))
             _ = LoadFromFileAsync(_loadedPath);
     }
+
+    /// <summary>Ручной выбор разделителя по индексу комбобокса (0 — авто, решается отдельно).</summary>
+    private static char ManualSeparator(int index) => index switch
+    {
+        1 => ',',
+        2 => ';',
+        3 => '\t',
+        _ => ',',
+    };
+
+    private static string DescribeSeparator(char sep, bool auto) => (sep, auto) switch
+    {
+        (';', false) => "; (точка с запятой)",
+        ('\t', false) => "Tab",
+        (';', true) => "; (точка с запятой) — определён по файлу",
+        ('\t', true) => "Tab — определён по файлу",
+        (_, true) => ", (запятая) — определён по файлу",
+        _ => ", (запятая)",
+    };
 
     public async Task LoadFromFileAsync(string path)
     {
         StatusMessage = "";
         try
         {
-            char sep = SelectedSeparatorIndex == 0 ? ',' : ';';
-            var table = await Task.Run(() => _csv.Load(path, sep));
+            var auto = SelectedSeparatorIndex == 0;
+            var (table, sep) = await Task.Run(() =>
+            {
+                char s = auto ? CsvService.DetectSeparator(path) : ManualSeparator(SelectedSeparatorIndex);
+                return (_csv.Load(path, s), s);
+            });
             if (table.Rows.Count > 3000)
                 throw new InvalidDataException("Слишком большой файл (>3000 записей) для наглядной демонстрации.");
 
@@ -148,6 +175,7 @@ public partial class Task2ViewModel : ObservableObject
             SourcePath = path;
             _loadedPath = path;
             FileName = System.IO.Path.GetFileName(path);
+            SeparatorInfo = "Разделитель: " + DescribeSeparator(sep, auto);
             var firstHeader = table.Headers.FirstOrDefault() ?? "";
             SelectedKeyColumn = firstHeader;
             OnPropertyChanged(nameof(CanStart));
@@ -272,14 +300,39 @@ public partial class Task2ViewModel : ObservableObject
 
     private async Task PlayLoopAsync(CancellationToken ct)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
+            // Кадровый показ при нулевой задержке: шаги копятся в фоне, UI обновляется
+            // не чаще ~25 кадров/с — иначе интерфейс «не отвечает».
+            ExternalSortStep? last = null;
+            int steps = 0, cmp = 0, mov = 0;
             while (_enumerator is not null && _enumerator.MoveNext())
             {
                 _currentStepNo++;
                 var step = _enumerator.Current;
-                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyStep(step); return (object?)null; });
+                last = step;
+                steps++;
+                switch (step.Op)
+                {
+                    case SortOpType.Compare: cmp++; break;
+                    case SortOpType.Assign: mov++; break;
+                }
+                if (_engine.DelayMs <= 0 && sw.ElapsedMilliseconds < 40 && steps < 5000) continue;
+
+                var s = last;
+                int st = steps, c = cmp, m = mov;
+                last = null;
+                steps = cmp = mov = 0;
+                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyFrame(s!, st, c, m); return (object?)null; });
+                sw.Restart();
                 await _engine.WaitAsync(ct);
+            }
+            if (last is not null)
+            {
+                var s = last;
+                int st = steps, c = cmp, m = mov;
+                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyFrame(s!, st, c, m); return (object?)null; });
             }
             await Dispatcher.UIThread.InvokeAsync<object?>(() =>
             {
@@ -328,16 +381,14 @@ public partial class Task2ViewModel : ObservableObject
         }
     }
 
-    private void ApplyStep(ExternalSortStep step)
+    /// <summary>Показать кадр: состояние последнего шага + счётчики по всем шагам кадра.</summary>
+    private void ApplyFrame(ExternalSortStep step, int steps, int cmp, int mov)
     {
         Tapes = step.Tapes;
         PhaseText = step.Phase;
         Explanation = step.Explanation;
-        switch (step.Op)
-        {
-            case SortOpType.Compare: Comparisons++; break;
-            case SortOpType.Assign: Moves++; break;
-        }
+        Comparisons += cmp;
+        Moves += mov;
         Log.Add(new LogEntry
         {
             Step = _currentStepNo,
@@ -349,7 +400,14 @@ public partial class Task2ViewModel : ObservableObject
             },
             Indices = step.LogIndices,
             Values = step.LogValues,
-            Explanation = step.Explanation,
+            Explanation = steps > 1
+                ? $"{step.Explanation} (итог {steps} шагов, остальные — в счётчиках)"
+                : step.Explanation,
         });
     }
+
+    private void ApplyStep(ExternalSortStep step) =>
+        ApplyFrame(step, 1,
+            cmp: step.Op == SortOpType.Compare ? 1 : 0,
+            mov: step.Op == SortOpType.Assign ? 1 : 0);
 }

@@ -48,6 +48,10 @@ public partial class Task3ViewModel : ObservableObject
     [ObservableProperty]
     private IReadOnlyList<WordChipVm> _chips = [];
 
+    /// <summary>Сообщение вместо визуализации (например, «слишком много слов»).</summary>
+    [ObservableProperty]
+    private string _visualMessage = "";
+
     [ObservableProperty]
     private string _explanation = "Введите текст, загрузите файл или сгенерируйте случайный текст.";
 
@@ -164,14 +168,20 @@ public partial class Task3ViewModel : ObservableObject
         {
             StatusMessage = "Текст пуст или не содержит слов.";
             WordsInfo = "Слова ещё не разобраны.";
+            VisualMessage = "";
             Chips = [];
             return;
         }
         _visualWords = _words.Length > VisualCap ? _words.Take(VisualCap).ToArray() : _words;
         WordsInfo = _words.Length > VisualCap
-            ? $"Слов: {_words.Length}. Для наглядности визуализируем первые {VisualCap}."
+            ? $"Слов: {_words.Length}. Визуализация отключена — сортируются первые {VisualCap}."
             : $"Слов: {_words.Length}.";
-        Chips = _visualWords.Select(w => new WordChipVm { Text = w, Mark = StepMark.Normal }).ToList();
+        VisualMessage = _words.Length > VisualCap
+            ? $"Слишком много слов для визуального отображения ({_words.Length})."
+            : "";
+        Chips = string.IsNullOrEmpty(VisualMessage)
+            ? _visualWords.Select(w => new WordChipVm { Text = w, Mark = StepMark.Normal }).ToList()
+            : [];
         Frequencies = new(TextProcessor.CountFrequencies(_words));
         FrequencyInfo = $"Уникальных слов: {Frequencies.Count}";
         ResetRun();
@@ -202,7 +212,9 @@ public partial class Task3ViewModel : ObservableObject
         ProgressText = "";
         IsPlaying = false;
         IsPaused = false;
-        Chips = _visualWords.Select(w => new WordChipVm { Text = w, Mark = StepMark.Normal }).ToList();
+        Chips = string.IsNullOrEmpty(VisualMessage)
+            ? _visualWords.Select(w => new WordChipVm { Text = w, Mark = StepMark.Normal }).ToList()
+            : [];
         OnPropertyChanged(nameof(CanPause));
         NotifyCanStart();
     }
@@ -277,14 +289,41 @@ public partial class Task3ViewModel : ObservableObject
 
     private async Task PlayLoopAsync(CancellationToken ct)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
+            // При нулевой задержке шаги идут сплошным потоком: накапливаем их в фоне и
+            // показываем на UI «кадрами» не чаще ~25 в секунду, иначе UI-поток захлёбывается
+            // и приложение «не отвечает». При задержке > 0 показываем каждый шаг.
+            StringSortStep? last = null;
+            int steps = 0, cmp = 0, mov = 0;
             while (_enumerator is not null && _enumerator.MoveNext())
             {
                 _currentStepNo++;
                 var step = _enumerator.Current;
-                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyStep(step); return (object?)null; });
+                last = step;
+                steps++;
+                switch (step.Op)
+                {
+                    case SortOpType.Compare: cmp++; break;
+                    case SortOpType.Swap:
+                    case SortOpType.Assign: mov++; break;
+                }
+                if (_engine.DelayMs <= 0 && sw.ElapsedMilliseconds < 40 && steps < 5000) continue;
+
+                var s = last;
+                int st = steps, c = cmp, m = mov;
+                last = null;
+                steps = cmp = mov = 0;
+                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyFrame(s!, st, c, m); return (object?)null; });
+                sw.Restart();
                 await _engine.WaitAsync(ct);
+            }
+            if (last is not null)
+            {
+                var s = last;
+                int st = steps, c = cmp, m = mov;
+                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyFrame(s!, st, c, m); return (object?)null; });
             }
             await Dispatcher.UIThread.InvokeAsync<object?>(() =>
             {
@@ -300,16 +339,13 @@ public partial class Task3ViewModel : ObservableObject
         catch (OperationCanceledException) { }
     }
 
-    private void ApplyStep(StringSortStep step)
+    /// <summary>Показать кадр: состояние последнего шага + счётчики по всем шагам кадра.</summary>
+    private void ApplyFrame(StringSortStep step, int steps, int cmp, int mov)
     {
         Chips = step.Values.Zip(step.Marks, (v, m) => new WordChipVm { Text = v, Mark = m }).ToList();
         Explanation = step.Explanation;
-        switch (step.Op)
-        {
-            case SortOpType.Compare: Comparisons++; break;
-            case SortOpType.Swap:
-            case SortOpType.Assign: Moves++; break;
-        }
+        Comparisons += cmp;
+        Moves += mov;
         string indices = step.IndexA >= 0 && step.IndexB >= 0
             ? $"{step.IndexA} ↔ {step.IndexB}"
             : step.IndexA >= 0 ? $"{step.IndexA}" : "";
@@ -322,10 +358,17 @@ public partial class Task3ViewModel : ObservableObject
             Operation = LogBox.OpName(step.Op),
             Indices = indices,
             Values = values,
-            Explanation = step.Explanation,
+            Explanation = steps > 1
+                ? $"{step.Explanation} (итог {steps} шагов, остальные — в счётчиках)"
+                : step.Explanation,
         });
         ProgressText = $"Шаг {_currentStepNo}";
     }
+
+    private void ApplyStep(StringSortStep step) =>
+        ApplyFrame(step, 1,
+            cmp: step.Op == SortOpType.Compare ? 1 : 0,
+            mov: step.Op is SortOpType.Swap or SortOpType.Assign ? 1 : 0);
 
     // ---------- Эксперименты ----------
 

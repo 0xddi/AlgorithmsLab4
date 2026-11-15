@@ -20,9 +20,12 @@
 
           <TextBlock Text="Разделитель" Classes="subtle" Margin="0,4,0,0" />
           <ComboBox SelectedIndex="{Binding SelectedSeparatorIndex}" HorizontalAlignment="Stretch">
+            <ComboBoxItem Content="Авто (по файлу)" />
             <ComboBoxItem Content=", (запятая)" />
             <ComboBoxItem Content="; (точка с запятой)" />
+            <ComboBoxItem Content="Tab" />
           </ComboBox>
+          <TextBlock Text="{Binding SeparatorInfo}" Classes="subtle" TextWrapping="Wrap" />
 
           <TextBlock Text="Ключевой атрибут" Classes="subtle" Margin="0,4,0,0" />
           <ComboBox ItemsSource="{Binding Table.Headers}" SelectedItem="{Binding SelectedKeyColumn}"

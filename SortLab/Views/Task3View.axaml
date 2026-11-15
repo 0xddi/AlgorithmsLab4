@@ -78,28 +78,19 @@
         <Border Grid.Row="0" Classes="card accentTop">
           <DockPanel>
             <TextBlock DockPanel.Dock="Top" Text="Визуализация слов" Classes="h2" Margin="0,0,0,6" />
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-              <ItemsControl ItemsSource="{Binding Chips}">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal" />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <controls:HighlightBorder>
-                      <TextBlock Text="{Binding Text}" FontSize="12" />
-                    </controls:HighlightBorder>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
+            <controls:WordSortVisualizer Words="{Binding Chips}" Message="{Binding VisualMessage}"
+                                         ChipBrush="{DynamicResource ChipBgBrush}"
+                                         TextBrush="{Binding Settings.LabelBrush}"
+                                         CompareBrush="{DynamicResource HighlightBrush}"
+                                         SwapBrush="{DynamicResource OkBrush}"
+                                         SortedBrush="{DynamicResource PanelBgBrush}"
+                                         PivotBrush="{DynamicResource AccentBrush}" />
           </DockPanel>
         </Border>
 
         <TextBlock Grid.Row="1" Text="Частоты слов" Classes="h2" />
         <TextBlock Grid.Row="2" Text="{Binding FrequencyInfo}" Classes="subtle" />
-        <Border Grid.Row="3" Classes="card" Padding="4" MaxHeight="200">
+        <Border Grid.Row="3" Classes="card" Padding="4" MaxHeight="150">
           <DataGrid AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False"
                     HeadersVisibility="Column" GridLinesVisibility="Horizontal"
                     ItemsSource="{Binding Frequencies}">
@@ -131,7 +122,7 @@
 
     <!-- НИЗ: эксперименты -->
     <Border Grid.Row="2" Classes="card">
-      <Grid ColumnDefinitions="220,3*,2*" ColumnSpacing="12">
+      <Grid ColumnDefinitions="200,*,*" ColumnSpacing="12">
         <StackPanel Grid.Column="0" Spacing="8">
           <TextBlock Text="Эксперименты" Classes="h2" />
           <TextBlock Text="Длины: 100, 500, 1000, 2000, 5000 слов. Показывается среднее время."
@@ -154,13 +145,13 @@
                                   HeaderTemplate="{StaticResource GridHeaderTemplate}" />
               <DataGridTextColumn Header="Алгоритм" Binding="{Binding Algorithm}" Width="*"
                                   HeaderTemplate="{StaticResource GridHeaderTemplate}" />
-              <DataGridTextColumn Header="Время, мс (сред.)" Binding="{Binding AvgMs, StringFormat=F2}" Width="88"
+              <DataGridTextColumn Header="Время, мс" Binding="{Binding AvgMs, StringFormat=F2}" Width="84"
                                   HeaderTemplate="{StaticResource GridHeaderTemplate}" />
-              <DataGridTextColumn Header="Минимум, мс" Binding="{Binding MinMs, StringFormat=F2}" Width="80"
+              <DataGridTextColumn Header="Минимум, мс" Binding="{Binding MinMs, StringFormat=F2}" Width="84"
                                   HeaderTemplate="{StaticResource GridHeaderTemplate}" />
               <DataGridTextColumn Header="Сравнения" Binding="{Binding Comparisons}" Width="88"
                                   HeaderTemplate="{StaticResource GridHeaderTemplate}" />
-              <DataGridTextColumn Header="Операции" Binding="{Binding Moves}" Width="80"
+              <DataGridTextColumn Header="Операции" Binding="{Binding Moves}" Width="84"
                                   HeaderTemplate="{StaticResource GridHeaderTemplate}" />
             </DataGrid.Columns>
           </DataGrid>
@@ -169,12 +160,14 @@
         <Grid Grid.Column="2" RowDefinitions="*,*" RowSpacing="8">
           <Border Grid.Row="0" Background="{DynamicResource PanelBgBrush}" CornerRadius="8">
             <controls:BarChart Categories="{Binding ChartCategories}" Series="{Binding ChartSeries}"
+                               XAxisTitle="Длина текста, слов" YAxisTitle="Время, мс"
                                GridBrush="{Binding Settings.GridBrush}" LabelBrush="{Binding Settings.LabelBrush}"
                                BarBrush1="{Binding Settings.ChartBrush1}" BarBrush2="{Binding Settings.ChartBrush2}"
                                BarBrush3="{Binding Settings.ChartBrush3}" BarBrush4="{Binding Settings.ChartBrush4}" />
           </Border>
           <Border Grid.Row="1" Background="{DynamicResource PanelBgBrush}" CornerRadius="8">
             <controls:LineChart Categories="{Binding ChartCategories}" Series="{Binding ChartSeries}"
+                                XAxisTitle="Длина текста, слов" YAxisTitle="Время, мс"
                                 GridBrush="{Binding Settings.GridBrush}" LabelBrush="{Binding Settings.LabelBrush}"
                                 LineBrush1="{Binding Settings.ChartBrush1}" LineBrush2="{Binding Settings.ChartBrush2}"
                                 LineBrush3="{Binding Settings.ChartBrush3}" LineBrush4="{Binding Settings.ChartBrush4}" />

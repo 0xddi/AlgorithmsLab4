@@ -7,6 +7,38 @@ namespace SortLab.Services;
 /// <summary>Чтение и запись CSV-таблиц с настраиваемым разделителем и поддержкой кавычек.</summary>
 public sealed class CsvService
 {
+    /// <summary>
+    /// Определить разделитель по содержимому файла: считаем кандидатов (запятая, точка с запятой, Tab)
+    /// в первых строках вне кавычек и выбираем самого частого.
+    /// </summary>
+    public static char DetectSeparator(string path)
+    {
+        char[] candidates = [',', ';', '\t'];
+        var scores = new int[candidates.Length];
+        using var reader = new StreamReader(path, Encoding.UTF8);
+        string? line;
+        int linesRead = 0;
+        while (linesRead < 10 && (line = reader.ReadLine()) is not null)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            linesRead++;
+            bool inQuotes = false;
+            foreach (var ch in line)
+            {
+                if (ch == '"') inQuotes = !inQuotes;
+                else if (!inQuotes)
+                {
+                    for (int i = 0; i < candidates.Length; i++)
+                        if (ch == candidates[i]) scores[i]++;
+                }
+            }
+        }
+        int best = 0;
+        for (int i = 1; i < candidates.Length; i++)
+            if (scores[i] > scores[best]) best = i;
+        return scores[best] > 0 ? candidates[best] : ',';
+    }
+
     public CsvTable Load(string path, char separator)
     {
         var lines = File.ReadAllLines(path, Encoding.UTF8);

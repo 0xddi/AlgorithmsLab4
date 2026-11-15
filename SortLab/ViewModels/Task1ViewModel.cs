@@ -245,15 +245,40 @@ public partial class Task1ViewModel : ObservableObject
 
     private async Task PlayLoopAsync(CancellationToken ct)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
+            // Кадровый показ при нулевой задержке: шаги копятся в фоне, UI обновляется
+            // не чаще ~25 кадров/с — иначе интерфейс «не отвечает».
+            SortStep? last = null;
+            int steps = 0, cmp = 0, swp = 0, asg = 0;
             while (_enumerator is not null && _enumerator.MoveNext())
             {
                 _currentStepNo++;
                 var step = _enumerator.Current;
-                // Применяем шаг на UI-потоке и ждём его применения.
-                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyStep(step); return (object?)null; });
+                last = step;
+                steps++;
+                switch (step.Op)
+                {
+                    case SortOpType.Compare: cmp++; break;
+                    case SortOpType.Swap: swp++; break;
+                    case SortOpType.Assign: asg++; break;
+                }
+                if (_engine.DelayMs <= 0 && sw.ElapsedMilliseconds < 40 && steps < 5000) continue;
+
+                var s = last;
+                int st = steps, c = cmp, w = swp, a = asg;
+                last = null;
+                steps = cmp = swp = asg = 0;
+                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyFrame(s!, st, c, w, a); return (object?)null; });
+                sw.Restart();
                 await _engine.WaitAsync(ct);
+            }
+            if (last is not null)
+            {
+                var s = last;
+                int st = steps, c = cmp, w = swp, a = asg;
+                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyFrame(s!, st, c, w, a); return (object?)null; });
             }
             await Dispatcher.UIThread.InvokeAsync<object?>(() =>
             {
@@ -271,18 +296,14 @@ public partial class Task1ViewModel : ObservableObject
         }
     }
 
-    // ---------- Применение шага ----------
-
-    private void ApplyStep(SortStep step)
+    /// <summary>Показать кадр: состояние последнего шага + счётчики по всем шагам кадра.</summary>
+    private void ApplyFrame(SortStep step, int steps, int cmp, int swp, int asg)
     {
         Bars = step.Marks.Zip(step.Values, (m, v) => new SortBar(v, m)).ToList();
         Explanation = step.Explanation;
-        switch (step.Op)
-        {
-            case SortOpType.Compare: Comparisons++; break;
-            case SortOpType.Swap: Swaps++; break;
-            case SortOpType.Assign: Assignments++; break;
-        }
+        Comparisons += cmp;
+        Swaps += swp;
+        Assignments += asg;
         string indices = step.IndexA >= 0 && step.IndexB >= 0
             ? $"{step.IndexA} ↔ {step.IndexB}"
             : step.IndexA >= 0 ? $"{step.IndexA}" : "";
@@ -295,10 +316,18 @@ public partial class Task1ViewModel : ObservableObject
             Operation = LogBox.OpName(step.Op),
             Indices = indices,
             Values = values,
-            Explanation = step.Explanation,
+            Explanation = steps > 1
+                ? $"{step.Explanation} (итог {steps} шагов, остальные — в счётчиках)"
+                : step.Explanation,
         });
         ProgressText = _totalSteps > 0
             ? $"Шаг {_currentStepNo} из {_totalSteps}"
             : $"Шаг {_currentStepNo}";
     }
+
+    private void ApplyStep(SortStep step) =>
+        ApplyFrame(step, 1,
+            cmp: step.Op == SortOpType.Compare ? 1 : 0,
+            swp: step.Op == SortOpType.Swap ? 1 : 0,
+            asg: step.Op == SortOpType.Assign ? 1 : 0);
 }
