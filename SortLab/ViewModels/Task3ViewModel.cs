@@ -17,6 +17,7 @@ public partial class Task3ViewModel : ObservableObject
     private readonly BenchmarkService _benchmark;
     private readonly PlaybackEngine _engine = new();
     private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _benchmarkCancellation;
     private IEnumerator<StringSortStep>? _enumerator;
     private string[] _words = [];
     private string[] _sortedWords = [];
@@ -66,6 +67,9 @@ public partial class Task3ViewModel : ObservableObject
     private System.Collections.ObjectModel.ObservableCollection<WordFrequency> _frequencies = new();
 
     [ObservableProperty]
+    private int _maxFrequency = 1;
+
+    [ObservableProperty]
     private string _frequencyInfo = "";
 
     [ObservableProperty]
@@ -85,7 +89,7 @@ public partial class Task3ViewModel : ObservableObject
 
     public bool CanStart => _words.Length > 0 && !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
-    public bool CanStep => !IsPlaying;
+    public bool CanStep => _words.Length > 0 && !IsPlaying;
 
     // ---------- Эксперименты ----------
 
@@ -131,11 +135,14 @@ public partial class Task3ViewModel : ObservableObject
         Settings = settings;
         Algorithms = algorithms.Select(a => (ISortAlgorithmOption)new AlgorithmOption(a)).ToList();
         _selectedAlgorithm = Algorithms[0];
-        InputText = "the quick brown fox jumps over the lazy dog\nthe dog barks and the fox runs away\na cat and a dog meet in the park";
+        InputText = "birch apple elm apple birch apple";
+        ApplyText();
         _delayMs = 50;
     }
 
     partial void OnDelayMsChanged(double value) => _engine.DelayMs = (int)Math.Clamp(value, 0, 2000);
+
+    partial void OnSelectedAlgorithmChanged(ISortAlgorithmOption value) => ApplyText();
 
     partial void OnIgnoreCaseChanged(bool value)
     {
@@ -209,6 +216,7 @@ public partial class Task3ViewModel : ObservableObject
         _engine.Reset();
         _enumerator?.Dispose();
         _enumerator = null;
+        _pendingVisual = null;
         _currentStepNo = 0;
         _finished = false;
         Comparisons = 0;
@@ -235,7 +243,7 @@ public partial class Task3ViewModel : ObservableObject
         _engine.Reset();
         _engine.DelayMs = (int)Math.Clamp(DelayMs, 0, 2000);
         _cts = new CancellationTokenSource();
-        _enumerator ??= SelectedAlgorithm.Algo.GetSteps(_words, snapshots: _words.Length <= VisualCap).GetEnumerator();
+        _enumerator ??= SelectedAlgorithm.Algo.GetSteps(_words, snapshots: false).GetEnumerator();
         IsPaused = false;
         IsPlaying = true;
         OnPropertyChanged(nameof(CanPause));
@@ -271,7 +279,7 @@ public partial class Task3ViewModel : ObservableObject
         if (IsPlaying) return;
         if (_finished) ResetRun();
         if (_enumerator is null && _words.Length > 0)
-            _enumerator ??= SelectedAlgorithm.Algo.GetSteps(_words, snapshots: _words.Length <= VisualCap).GetEnumerator();
+            _enumerator ??= SelectedAlgorithm.Algo.GetSteps(_words, snapshots: false).GetEnumerator();
         if (_enumerator is null) return;
         Advance();
     }
@@ -292,6 +300,7 @@ public partial class Task3ViewModel : ObservableObject
         IsPaused = false;
         _engine.Resume();
         Frequencies = new(TextProcessor.CountFrequencies(_sortedWords));
+        MaxFrequency = Frequencies.Count == 0 ? 1 : Frequencies.Max(f => f.Count);
         FrequencyInfo = $"Уникальных слов: {Frequencies.Count}";
         Explanation = "Готово! Слова отсортированы, частоты подсчитаны.";
         OnPropertyChanged(nameof(CanPause));
@@ -310,16 +319,27 @@ public partial class Task3ViewModel : ObservableObject
     {
         try
         {
-            await _engine.PlayAsync(Advance, ct);
+            await _engine.PlayAsync(Advance, ct, PublishVisual);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+    }
+
+    // При быстром прогоне журнал получает каждую операцию, а сцена — последний шаг кадра.
+    private StringSortStep? _pendingVisual;
+
+    private void PublishVisual()
+    {
+        if (_pendingVisual is not { } step) return;
+        _pendingVisual = null;
+        if (_words.Length <= VisualCap)
+            Chips = step.Values.Zip(step.Marks, (v, m) => new WordChipVm { Text = v, Mark = m }).ToList();
     }
 
     private void ApplyStep(StringSortStep step)
     {
         _sortedWords = step.Values;
-        if (_words.Length <= VisualCap)
-            Chips = step.Values.Zip(step.Marks, (v, m) => new WordChipVm { Text = v, Mark = m }).ToList();
+        _pendingVisual = step;
+        if (!IsPlaying) PublishVisual();
         Explanation = step.Explanation;
         if (step.Op == SortOpType.Compare) Comparisons++;
         if (step.Op is SortOpType.Assign or SortOpType.Swap) Moves++;
@@ -379,7 +399,7 @@ public partial class Task3ViewModel : ObservableObject
         BenchRunning = true;
         HasBenchResults = false;
         OnPropertyChanged(nameof(CanRunBench));
-        _cts = new CancellationTokenSource();
+        _benchmarkCancellation = new CancellationTokenSource();
         try
         {
             int[] lengths = _benchLengths.ToArray();
@@ -392,14 +412,13 @@ public partial class Task3ViewModel : ObservableObject
                 {
                     BenchProgress = pct;
                     BenchStatus = msg;
-                }), _cts.Token);
+                }), _benchmarkCancellation.Token);
 
             BenchmarkResults = new(results);
             ChartCategories = lengths.Select(l => l.ToString()).ToList();
             ChartSeries = algos.Select((a, i) => new ChartSeriesData(a.Name,
                     lengths.Select(l => results.Where(r => r.Length == l && r.Algorithm == a.Name)
                         .Select(r => r.AvgMs).FirstOrDefault())
-                        .Select(v => v == 0 ? 0.1 : v) // нулевые времена не рисуем
                         .ToList()))
                 .ToList();
             HasBenchResults = true;
@@ -416,6 +435,8 @@ public partial class Task3ViewModel : ObservableObject
         }
         finally
         {
+            _benchmarkCancellation.Dispose();
+            _benchmarkCancellation = null;
             BenchRunning = false;
             OnPropertyChanged(nameof(CanRunBench));
         }
@@ -424,7 +445,7 @@ public partial class Task3ViewModel : ObservableObject
     [RelayCommand]
     private void CancelBenchmark()
     {
-        _cts?.Cancel();
+        _benchmarkCancellation?.Cancel();
     }
 
     /// <summary>«прогон» / «прогона» / «прогонов» по правилам русского языка.</summary>

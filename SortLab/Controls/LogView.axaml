@@ -6,17 +6,20 @@
              mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="600">
 
   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="6">
-    <StackPanel Orientation="Horizontal" Spacing="8">
+    <DockPanel>
+      <Button x:Name="ExpandButton" DockPanel.Dock="Right" Content="Открыть весь журнал" Click="OpenFullLog"/>
+      <StackPanel Orientation="Horizontal" Spacing="8">
       <TextBlock Text="Журнал операций" Classes="h2" VerticalAlignment="Center"/>
       <TextBlock Text="{Binding Log.CountText, FallbackValue=''}" Classes="subtle" VerticalAlignment="Center"/>
-    </StackPanel>
+      </StackPanel>
+    </DockPanel>
 
     <DataGrid x:Name="LogGrid" Grid.Row="1" Classes="compact"
               AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False"
               HeadersVisibility="Column" GridLinesVisibility="Horizontal"
               ItemsSource="{Binding Log.FilteredEntries}">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="№" Binding="{Binding Step}" Width="24"
+        <DataGridTextColumn Header="№" Binding="{Binding Step}" Width="58"
                             HeaderTemplate="{StaticResource GridHeaderTemplate}" />
         <DataGridTextColumn Header="Операция" Binding="{Binding Operation}" Width="108"
                             HeaderTemplate="{StaticResource GridHeaderTemplate}" />
@@ -24,7 +27,7 @@
                             HeaderTemplate="{StaticResource GridHeaderTemplate}" />
         <DataGridTextColumn Header="Значения" Binding="{Binding Values}" Width="86"
                             HeaderTemplate="{StaticResource GridHeaderTemplate}" />
-        <DataGridTemplateColumn Header="Пояснение" Width="*"
+        <DataGridTemplateColumn Header="Пояснение" Width="*" MinWidth="108"
                                 HeaderTemplate="{StaticResource GridHeaderTemplate}">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
@@ -35,10 +38,10 @@
       </DataGrid.Columns>
     </DataGrid>
 
-    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
-      <TextBox Watermark="Фильтр по тексту..." Text="{Binding Log.FilterText}" Width="170" />
-      <ComboBox MinWidth="130" ItemsSource="{Binding Log.TypeOptions}" SelectedItem="{Binding Log.SelectedType}" />
-      <Button Content="Очистить" Command="{Binding Log.ClearCommand}" />
-    </StackPanel>
+    <Grid x:Name="Filters" IsVisible="False" Grid.Row="2" ColumnDefinitions="*,*,Auto" ColumnSpacing="6">
+      <TextBox Watermark="Фильтр по тексту..." Text="{Binding Log.FilterText}" MinWidth="0" />
+      <ComboBox Grid.Column="1" MinWidth="0" ItemsSource="{Binding Log.TypeOptions}" SelectedItem="{Binding Log.SelectedType}" />
+      <Button Grid.Column="2" Content="Очистить" Command="{Binding Log.ClearLogCommand}" />
+    </Grid>
   </Grid>
 </UserControl>

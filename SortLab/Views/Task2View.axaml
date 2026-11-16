@@ -1,181 +1,154 @@
-<UserControl x:Class="SortLab.Views.Task2View"
-             xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="using:SortLab.Controls"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="1250" d:DesignHeight="720">
-
-  <Grid ColumnDefinitions="320,Auto,*,Auto,450">
-
-    <!-- ЛЕВАЯ ПАНЕЛЬ -->
-    <Border Grid.Column="0" Classes="card">
-      <ScrollViewer>
-        <StackPanel Spacing="9">
-          <TextBlock Text="Данные и параметры" Classes="h2" />
-
-          <Button Content="Загрузить CSV-файл..." Classes="accent" Click="OnBrowse" HorizontalAlignment="Stretch" />
-          <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding SourcePath}" Classes="subtle" TextWrapping="Wrap" />
-
-          <TextBlock Text="Примеры таблиц из задания" Classes="subtle" Margin="0,4,0,0" />
-          <ComboBox ItemsSource="{Binding SampleNames}" SelectedIndex="{Binding SelectedSampleIndex}"
-                    HorizontalAlignment="Stretch" />
-          <Button Content="Загрузить пример" Command="{Binding LoadSampleCommand}"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-
-          <TextBlock Text="Разделитель" Classes="subtle" Margin="0,4,0,0" />
-          <ComboBox SelectedIndex="{Binding SelectedSeparatorIndex}" HorizontalAlignment="Stretch">
-            <ComboBoxItem Content="Авто (по файлу)" />
-            <ComboBoxItem Content=", (запятая)" />
-            <ComboBoxItem Content="; (точка с запятой)" />
-            <ComboBoxItem Content="Tab" />
-          </ComboBox>
-          <TextBlock Text="{Binding SeparatorInfo}" Classes="subtle" TextWrapping="Wrap" />
-
-          <TextBlock Text="Ключевой атрибут" Classes="subtle" Margin="0,4,0,0" />
-          <ComboBox ItemsSource="{Binding Table.Headers}" SelectedItem="{Binding SelectedKeyColumn}"
-                    HorizontalAlignment="Stretch" />
-
-          <TextBlock Text="Тип ключа" Classes="subtle" Margin="0,4,0,0" />
-          <ComboBox ItemsSource="{Binding KeyTypes}" SelectedIndex="{Binding SelectedKeyTypeIndex}"
-                    HorizontalAlignment="Stretch" />
-
-          <TextBlock Text="Направление" Classes="subtle" Margin="0,4,0,0" />
-          <ComboBox SelectedIndex="{Binding SelectedDirectionIndex}" HorizontalAlignment="Stretch">
-            <ComboBoxItem Content="По возрастанию" />
-            <ComboBoxItem Content="По убыванию" />
-          </ComboBox>
-
-          <TextBlock Text="Фильтр записей (необязательно)" Classes="subtle" Margin="0,4,0,0" />
-          <ComboBox ItemsSource="{Binding FilterOptions}" SelectedIndex="{Binding FilterColumnIndex}"
-                    HorizontalAlignment="Stretch" />
-          <TextBox Watermark="Значение фильтра, напр. Европа" Text="{Binding FilterValue}" />
-
-          <TextBlock Text="Метод внешней сортировки" Classes="subtle" Margin="0,4,0,0" />
-          <ComboBox ItemsSource="{Binding SorterNames}" SelectedIndex="{Binding SelectedSorterIndex}"
-                    HorizontalAlignment="Stretch" />
-          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsMultiway}">
-            <TextBlock Text="Число путей k:" VerticalAlignment="Center" />
-            <NumericUpDown Minimum="2" Maximum="8" Increment="1" Value="{Binding MultiwayK}" Width="90" />
-          </StackPanel>
-
-          <Separator Margin="0,4,0,0" />
-
-          <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*" ColumnSpacing="6" RowSpacing="6">
-            <Button Grid.Row="0" Grid.Column="0" Content="Старт" Classes="accent" HorizontalContentAlignment="Center"
-                    Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}" />
-            <Button Grid.Row="0" Grid.Column="1" Content="Пауза" HorizontalContentAlignment="Center"
-                    Command="{Binding PauseCommand}" IsEnabled="{Binding CanPause}" />
-            <Button Grid.Row="1" Grid.Column="0" Content="Продолжить" HorizontalContentAlignment="Center"
-                    Command="{Binding ContinueCommand}" IsEnabled="{Binding IsPaused}" />
-            <Button Grid.Row="1" Grid.Column="1" Content="Шаг" HorizontalContentAlignment="Center"
-                    Command="{Binding StepCommand}" IsEnabled="{Binding CanStep}" />
-            <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Сброс" Classes="danger" HorizontalContentAlignment="Center"
-                    Command="{Binding ResetCommand}" />
-          </Grid>
-
-          <TextBlock Text="Задержка между шагами (0–2000 мс)" Classes="subtle" Margin="0,6,0,0" />
-          <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}" />
-          <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle" />
-
-          <Separator Margin="0,4,0,0" />
-
-          <StackPanel Spacing="3">
-            <TextBlock Text="{Binding PhaseText}" FontWeight="SemiBold" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding Comparisons, StringFormat='Сравнений: {0}'}" />
-            <TextBlock Text="{Binding Moves, StringFormat='Перемещений: {0}'}" />
-          </StackPanel>
-
-          <Button Content="Сохранить результат..." Click="OnSaveResult" HorizontalAlignment="Stretch"
-                  IsEnabled="{Binding HasResult}" />
-          <TextBlock Text="{Binding ResultInfo}" Classes="subtle" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" />
-        </StackPanel>
-      </ScrollViewer>
-    </Border>
-
-    <GridSplitter Grid.Column="1" Width="6" Background="Transparent" HorizontalAlignment="Stretch" />
-
-    <!-- ЦЕНТР: таблица + ленты -->
-    <Grid Grid.Column="2" RowDefinitions="Auto,3*,Auto,2*" RowSpacing="8" Margin="8,0,8,0">
-      <TextBlock Grid.Row="0" Text="Исходная таблица" Classes="h2" />
-
-      <Border Grid.Row="1" Classes="card" Padding="4">
-        <DataGrid x:Name="SourceGrid" AutoGenerateColumns="False" IsReadOnly="True"
-                  CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                  ItemsSource="{Binding Table.Rows}" />
-      </Border>
-
-      <TextBlock Grid.Row="2" Text="Файлы / ленты (отрезки)" Classes="h2" Margin="0,4,0,0" />
-
-      <Border Grid.Row="3" Classes="card" Padding="8">
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding Tapes}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="10" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Border Background="{DynamicResource PanelBgBrush}" CornerRadius="8" Padding="8" MaxWidth="520">
-                  <StackPanel Spacing="6">
-                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                    <ItemsControl ItemsSource="{Binding Series}">
-                      <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                          <WrapPanel Orientation="Vertical" MaxHeight="260" />
-                        </ItemsPanelTemplate>
-                      </ItemsControl.ItemsPanel>
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                          <Border Background="{DynamicResource ChipBgBrush}" CornerRadius="6" Padding="4" Margin="2">
-                            <ItemsControl ItemsSource="{Binding Chips}">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:SortLab.Controls" x:Class="SortLab.Views.Task2View">
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+    <StackPanel Spacing="4">
+      <TextBlock Classes="h1" Text="Внешняя сортировка" TextWrapping="Wrap"/>
+      <TextBlock Classes="subtle" Text="Сравнивайте записи по выбранному столбцу и следите за слиянием серий." TextWrapping="Wrap"/>
+    </StackPanel>
+    <Grid Grid.Row="1" ColumnSpacing="14">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="0.44*" MinWidth="270" MaxWidth="440"/>
+      </Grid.ColumnDefinitions>
+      <Border Classes="card">
+        <Grid RowDefinitions="*,Auto,Auto" RowSpacing="10">
+          <TabControl>
+            <TabItem Header="Серии и ленты">
+              <Panel>
+                <TextBlock Classes="subtle" IsVisible="{Binding !Tapes.Count}" TextWrapping="Wrap"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"
+                           Text="Серии появятся после первого шага сортировки."/>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                  <ItemsControl ItemsSource="{Binding Tapes}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Spacing="8"/>
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border Background="{DynamicResource PanelBgBrush}" CornerRadius="8" Padding="8">
+                          <StackPanel Spacing="6">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                            <ItemsControl ItemsSource="{Binding Series}">
                               <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                  <WrapPanel Orientation="Vertical" MaxHeight="140" />
+                                  <WrapPanel Orientation="Horizontal"/>
                                 </ItemsPanelTemplate>
                               </ItemsControl.ItemsPanel>
                               <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                  <controls:HighlightBorder IsCompared="{Binding IsCompared}" IsMoved="{Binding IsMoved}">
-                                    <TextBlock Text="{Binding Text}" FontSize="12" />
-                                  </controls:HighlightBorder>
+                                  <Border Background="{DynamicResource ChipBgBrush}" CornerRadius="6" Padding="4" Margin="2">
+                                    <ItemsControl ItemsSource="{Binding Chips}">
+                                      <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                          <WrapPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                      </ItemsControl.ItemsPanel>
+                                      <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                          <controls:HighlightBorder IsCompared="{Binding IsCompared}" IsMoved="{Binding IsMoved}">
+                                            <TextBlock Text="{Binding Text}" FontSize="12"/>
+                                          </controls:HighlightBorder>
+                                        </DataTemplate>
+                                      </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                  </Border>
                                 </DataTemplate>
                               </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                          </Border>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                  </StackPanel>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Panel>
+            </TabItem>
+            <TabItem Header="Входная таблица">
+              <DataGrid x:Name="SourceGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding Table.Rows}"/>
+            </TabItem>
+            <TabItem Header="Результат">
+              <DataGrid x:Name="ResultGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding ResultTable.Rows}"/>
+            </TabItem>
+          </TabControl>
+          <Border Grid.Row="1" Background="{DynamicResource NoteBrush}" Padding="14,9" CornerRadius="8">
+            <StackPanel Spacing="3">
+              <TextBlock Classes="step" Text="{Binding PhaseText}" TextWrapping="Wrap"/>
+              <ScrollViewer MaxHeight="68">
+                <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap"/>
+              </ScrollViewer>
+            </StackPanel>
+          </Border>
+          <controls:PlaybackControls Grid.Row="2"/>
+        </Grid>
+      </Border>
+      <Border Classes="card" Grid.Column="1">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="8">
+            <TextBlock Classes="h2" Text="Параметры" TextWrapping="Wrap"/>
+            <Button Content="Открыть CSV…" Classes="primary" Click="OnBrowse" HorizontalAlignment="Stretch"/>
+            <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            <TextBlock Text="Метод внешней сортировки" Classes="subtle" Margin="0,4,0,0"/>
+            <ComboBox ItemsSource="{Binding SorterNames}" SelectedIndex="{Binding SelectedSorterIndex}" HorizontalAlignment="Stretch"/>
+            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsMultiway}">
+              <TextBlock Text="Число путей k:" VerticalAlignment="Center"/>
+              <NumericUpDown Minimum="2" Maximum="8" Increment="1" Value="{Binding MultiwayK}" Width="90"/>
+            </StackPanel>
+            <TextBlock Text="Ключевой атрибут" Classes="subtle" Margin="0,4,0,0"/>
+            <ComboBox ItemsSource="{Binding Table.Headers}" SelectedItem="{Binding SelectedKeyColumn}" HorizontalAlignment="Stretch"/>
+            <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}"/>
+            <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle"/>
+            <Button Content="Сохранить CSV…" Click="OnSaveResult" HorizontalAlignment="Stretch" IsEnabled="{Binding HasResult}"/>
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+              <Expander.Header><TextBlock Text="Примеры таблиц" TextWrapping="Wrap"/></Expander.Header>
+              <StackPanel Spacing="8">
+                <TextBlock Text="Примеры таблиц из задания" Classes="subtle" Margin="0,4,0,0"/>
+                <ComboBox ItemsSource="{Binding SampleNames}" SelectedIndex="{Binding SelectedSampleIndex}" HorizontalAlignment="Stretch"/>
+                <Button Content="Загрузить пример" Command="{Binding LoadSampleCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+              </StackPanel>
+            </Expander>
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+              <Expander.Header><TextBlock Text="Формат и отбор строк" TextWrapping="Wrap"/></Expander.Header>
+              <StackPanel Spacing="8">
+                <TextBlock Text="Разделитель" Classes="subtle" Margin="0,4,0,0"/>
+                <ComboBox SelectedIndex="{Binding SelectedSeparatorIndex}" HorizontalAlignment="Stretch">
+                  <ComboBoxItem Content="Авто (по файлу)"/>
+                  <ComboBoxItem Content=", (запятая)"/>
+                  <ComboBoxItem Content="; (точка с запятой)"/>
+                  <ComboBoxItem Content="Tab"/>
+                </ComboBox>
+                <TextBlock Text="Тип ключа" Classes="subtle" Margin="0,4,0,0"/>
+                <ComboBox ItemsSource="{Binding KeyTypes}" SelectedIndex="{Binding SelectedKeyTypeIndex}" HorizontalAlignment="Stretch"/>
+                <TextBlock Text="Направление" Classes="subtle" Margin="0,4,0,0"/>
+                <ComboBox SelectedIndex="{Binding SelectedDirectionIndex}" HorizontalAlignment="Stretch">
+                  <ComboBoxItem Content="По возрастанию"/>
+                  <ComboBoxItem Content="По убыванию"/>
+                </ComboBox>
+                <TextBlock Text="Фильтр записей (необязательно)" Classes="subtle" Margin="0,4,0,0"/>
+                <ComboBox ItemsSource="{Binding FilterOptions}" SelectedIndex="{Binding FilterColumnIndex}" HorizontalAlignment="Stretch"/>
+                <TextBox Watermark="Значение фильтра, напр. Европа" Text="{Binding FilterValue}"/>
+              </StackPanel>
+            </Expander>
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+              <Expander.Header><TextBlock Text="Сведения о файле" TextWrapping="Wrap"/></Expander.Header>
+              <StackPanel Spacing="8">
+                <TextBlock Text="{Binding SourcePath}" Classes="subtle" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding SeparatorInfo}" Classes="subtle" TextWrapping="Wrap"/>
+                <StackPanel Spacing="3">
+                  <TextBlock Text="{Binding PhaseText}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding Comparisons, StringFormat='Сравнений: {0}'}"/>
+                  <TextBlock Text="{Binding Moves, StringFormat='Перемещений: {0}'}"/>
+                </StackPanel>
+              </StackPanel>
+            </Expander>
+            <TextBlock Text="{Binding ResultInfo}" Classes="subtle" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"/>
+          </StackPanel>
         </ScrollViewer>
       </Border>
     </Grid>
-
-    <GridSplitter Grid.Column="3" Width="6" Background="Transparent" HorizontalAlignment="Stretch" />
-
-    <!-- ПРАВО: результат + журнал -->
-    <Grid Grid.Column="4" RowDefinitions="1.2*,*" RowSpacing="8">
-      <Border Grid.Row="0" Classes="card" Padding="4">
-        <DockPanel>
-          <StackPanel DockPanel.Dock="Top" Margin="8,8,8,4">
-            <TextBlock Text="Результат (отсортировано)" Classes="h2" />
-            <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" Classes="subtle" Margin="0,2,0,4" />
-          </StackPanel>
-          <DataGrid x:Name="ResultGrid" AutoGenerateColumns="False" IsReadOnly="True"
-                    CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                    ItemsSource="{Binding ResultTable.Rows}" />
-        </DockPanel>
-      </Border>
-      <Border Grid.Row="1" Classes="card">
-        <controls:LogView />
-      </Border>
-    </Grid>
+    <Border Classes="card" Grid.Row="2" Height="162">
+      <controls:LogView/>
+    </Border>
   </Grid>
 </UserControl>

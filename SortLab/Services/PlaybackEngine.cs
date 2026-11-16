@@ -38,7 +38,7 @@ public sealed class PlaybackEngine
 
     /// <summary>Шаги и команды управления работают на UI-потоке. При нулевой задержке
     /// регулярно отдаём управление интерфейсу, сохраняя каждую операцию журнала.</summary>
-    public async Task PlayAsync(Func<bool> advance, CancellationToken ct)
+    public async Task PlayAsync(Func<bool> advance, CancellationToken ct, Action publishVisual)
     {
         var frame = Stopwatch.StartNew();
         while (true)
@@ -46,10 +46,19 @@ public sealed class PlaybackEngine
             ct.ThrowIfCancellationRequested();
             if (_paused) await _resume.Task.WaitAsync(ct);
             ct.ThrowIfCancellationRequested();
-            if (!advance()) return;
-            if (DelayMs > 0) await Task.Delay(DelayMs, ct);
+            if (!advance())
+            {
+                publishVisual();
+                return;
+            }
+            if (DelayMs > 0)
+            {
+                publishVisual();
+                await Task.Delay(DelayMs, ct);
+            }
             else if (frame.ElapsedMilliseconds >= 16)
             {
+                publishVisual();
                 await Task.Delay(1, ct);
                 frame.Restart();
             }

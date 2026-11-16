@@ -128,7 +128,7 @@ public partial class Task2ViewModel : ObservableObject
 
     public bool CanStart => Table is not null && SelectedKeyColumn is not null && !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
-    public bool CanStep => !IsPlaying;
+    public bool CanStep => !IsPlaying && (CanStart || _enumerator is not null);
 
     partial void OnSelectedSorterIndexChanged(int value)
     {
@@ -246,6 +246,7 @@ public partial class Task2ViewModel : ObservableObject
         HasResult = false;
         ResultTable = null;
         ResultInfo = "";
+        _pendingVisual = null;
         _currentStepNo = 0;
         _finished = false;
         Comparisons = 0;
@@ -412,7 +413,7 @@ public partial class Task2ViewModel : ObservableObject
     {
         try
         {
-            await _engine.PlayAsync(Advance, ct);
+            await _engine.PlayAsync(Advance, ct, PublishVisual);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
     }
@@ -451,10 +452,21 @@ public partial class Task2ViewModel : ObservableObject
         }
     }
 
+    // При быстром прогоне журнал получает каждую операцию, а сцена — последний шаг кадра.
+    private ExternalSortStep? _pendingVisual;
+
+    private void PublishVisual()
+    {
+        if (_pendingVisual is not { } step) return;
+        _pendingVisual = null;
+        Tapes = CompactTapes(step.Tapes);
+    }
+
     private void ApplyStep(ExternalSortStep step)
     {
         if (step.Result is not null) _sortedRows = step.Result;
-        Tapes = CompactTapes(step.Tapes);
+        _pendingVisual = step;
+        if (!IsPlaying) PublishVisual();
         PhaseText = step.Phase;
         Explanation = step.Explanation;
         if (step.Op == SortOpType.Compare) Comparisons++;

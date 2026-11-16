@@ -10,7 +10,7 @@
       <Border Classes="card">
         <StackPanel Spacing="10">
           <TextBlock Text="Оформление" Classes="h2" />
-          <StackPanel Orientation="Horizontal" Spacing="10">
+          <StackPanel Spacing="6">
             <ToggleSwitch IsChecked="{Binding DarkTheme}" OnContent="Тёмная тема" OffContent="Светлая тема" />
             <TextBlock Text="Тема применяется ко всем вкладкам мгновенно и сохраняется между запусками."
                        Classes="subtle" VerticalAlignment="Center" TextWrapping="Wrap" />
@@ -22,7 +22,7 @@
           <TextBlock Text="Размер шрифта" Classes="subtle" Margin="0,6,0,0" />
           <Slider Minimum="11" Maximum="22" Value="{Binding FontSize}" Width="320" HorizontalAlignment="Left"
                   TickFrequency="1" IsSnapToTickEnabled="True" />
-          <TextBlock Text="{Binding FontSize, StringFormat='Шрифт: {0:F0} pt'}" Classes="subtle" />
+          <TextBlock Text="{Binding FontSize, StringFormat='Шрифт: {0:F0}'}" Classes="subtle" />
 
           <CheckBox Content="Показывать подписи значений над столбиками" IsChecked="{Binding ShowValueLabels}" Margin="0,6,0,0" />
         </StackPanel>

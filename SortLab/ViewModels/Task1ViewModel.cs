@@ -32,7 +32,7 @@ public partial class Task1ViewModel : ObservableObject
     public string AlgorithmDescription => SelectedAlgorithm.Description;
 
     [ObservableProperty]
-    private int _arraySize = 24;
+    private int _arraySize = 8;
 
     [ObservableProperty]
     private string _manualInput = "";
@@ -76,7 +76,7 @@ public partial class Task1ViewModel : ObservableObject
 
     public bool CanStart => !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
-    public bool CanContinueOrStep => IsPaused || (!IsPlaying && !IsPaused);
+    public bool CanStep => IsPaused || (!IsPlaying && !IsPaused);
 
     public Task1ViewModel(IReadOnlyList<ISortAlgorithm> algorithms, SettingsViewModel settings)
     {
@@ -84,7 +84,13 @@ public partial class Task1ViewModel : ObservableObject
         Settings = settings;
         _selectedAlgorithm = algorithms[0];
         _delayMs = settings.ToSettings().DefaultDelayMs;
-        GenerateArray();
+        ManualInput = "3, 8, 5, 2, 7, 4, 6, 1";
+        ApplyManual();
+    }
+
+    partial void OnSelectedAlgorithmChanged(ISortAlgorithm value)
+    {
+        if (_initialArray.Length > 0) SetInitialArray(_initialArray);
     }
 
     partial void OnDelayMsChanged(double value) => _engine.DelayMs = (int)Math.Clamp(value, 0, 2000);
@@ -93,7 +99,7 @@ public partial class Task1ViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(CanStart));
         OnPropertyChanged(nameof(CanPause));
-        OnPropertyChanged(nameof(CanContinueOrStep));
+        OnPropertyChanged(nameof(CanStep));
     }
 
     // ---------- Данные ----------
@@ -230,7 +236,7 @@ public partial class Task1ViewModel : ObservableObject
     [RelayCommand]
     private void Reset()
     {
-        ResetInternal();
+        SetInitialArray(_initialArray);
     }
 
     private void ResetInternal()
@@ -241,6 +247,7 @@ public partial class Task1ViewModel : ObservableObject
         _engine.Reset();
         _enumerator?.Dispose();
         _enumerator = null;
+        _pendingVisual = null;
         _currentStepNo = 0;
         _finished = false;
         Comparisons = 0;
@@ -256,14 +263,25 @@ public partial class Task1ViewModel : ObservableObject
     {
         try
         {
-            await _engine.PlayAsync(Advance, ct);
+            await _engine.PlayAsync(Advance, ct, PublishVisual);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
     }
 
+    // При быстром прогоне журнал получает каждую операцию, а сцена — последний шаг кадра.
+    private SortStep? _pendingVisual;
+
+    private void PublishVisual()
+    {
+        if (_pendingVisual is not { } step) return;
+        _pendingVisual = null;
+        Bars = step.Marks.Zip(step.Values, (m, v) => new SortBar(v, m)).ToList();
+    }
+
     private void ApplyStep(SortStep step)
     {
-        Bars = step.Marks.Zip(step.Values, (m, v) => new SortBar(v, m)).ToList();
+        _pendingVisual = step;
+        if (!IsPlaying) PublishVisual();
         Explanation = step.Explanation;
         if (step.Op == SortOpType.Compare) Comparisons++;
         if (step.Op == SortOpType.Swap) Swaps++;

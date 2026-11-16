@@ -163,7 +163,10 @@ public sealed class ImprovedBubbleSort : ISortAlgorithm
             {
                 c.Mark(i, StepMark.Compare);
                 c.Mark(i + 1, StepMark.Compare);
-                yield return c.S(SortOpType.Compare, i, i + 1, $"Сравниваем соседей {c.A[i]} и {c.A[i + 1]}: кто больше?");
+                string explanation = c.A[i] > c.A[i + 1]
+                    ? $"{c.A[i]} больше {c.A[i + 1]}. На следующем шаге поменяем их местами."
+                    : $"Соседи {c.A[i]} и {c.A[i + 1]} уже по порядку. Обмен не нужен.";
+                yield return c.S(SortOpType.Compare, i, i + 1, explanation);
                 if (c.A[i] > c.A[i + 1])
                 {
                     c.Swap(i, i + 1);

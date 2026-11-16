@@ -1,11 +1,17 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using SortLab.Services;
+using CommunityToolkit.Mvvm.Input;
 
 namespace SortLab.ViewModels;
 
 /// <summary>Корневая ViewModel главного окна: вкладки заданий + настройки.</summary>
 public partial class MainWindowViewModel : ObservableObject
 {
+    [ObservableProperty]
+    private int _selectedPageIndex;
+
+    [RelayCommand]
+    private void OpenBenchmarks() => SelectedPageIndex = 3;
+
     public Task1ViewModel Task1 { get; }
     public Task2ViewModel Task2 { get; }
     public Task3ViewModel Task3 { get; }
