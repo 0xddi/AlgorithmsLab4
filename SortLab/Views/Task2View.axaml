@@ -18,6 +18,12 @@
           <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding SourcePath}" Classes="subtle" TextWrapping="Wrap" />
 
+          <TextBlock Text="Примеры таблиц из задания" Classes="subtle" Margin="0,4,0,0" />
+          <ComboBox ItemsSource="{Binding SampleNames}" SelectedIndex="{Binding SelectedSampleIndex}"
+                    HorizontalAlignment="Stretch" />
+          <Button Content="Загрузить пример" Command="{Binding LoadSampleCommand}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+
           <TextBlock Text="Разделитель" Classes="subtle" Margin="0,4,0,0" />
           <ComboBox SelectedIndex="{Binding SelectedSeparatorIndex}" HorizontalAlignment="Stretch">
             <ComboBoxItem Content="Авто (по файлу)" />
@@ -40,6 +46,11 @@
             <ComboBoxItem Content="По возрастанию" />
             <ComboBoxItem Content="По убыванию" />
           </ComboBox>
+
+          <TextBlock Text="Фильтр записей (необязательно)" Classes="subtle" Margin="0,4,0,0" />
+          <ComboBox ItemsSource="{Binding FilterOptions}" SelectedIndex="{Binding FilterColumnIndex}"
+                    HorizontalAlignment="Stretch" />
+          <TextBox Watermark="Значение фильтра, напр. Европа" Text="{Binding FilterValue}" />
 
           <TextBlock Text="Метод внешней сортировки" Classes="subtle" Margin="0,4,0,0" />
           <ComboBox ItemsSource="{Binding SorterNames}" SelectedIndex="{Binding SelectedSorterIndex}"

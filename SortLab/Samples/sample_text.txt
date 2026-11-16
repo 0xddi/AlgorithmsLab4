@@ -1,4 +1,0 @@
-The quick brown fox jumps over the lazy dog. The dog barks, and the fox runs away.
-A cat and a dog meet in the park; the cat sleeps while the dog plays.
-Quick sort is a fast sorting algorithm, and radix sort sorts words by letters.
-The fox and the dog are friends, but the cat is lazy. Sorting words is fun!

@@ -17,6 +17,7 @@ public partial class Task2ViewModel : ObservableObject
     private Task? _playTask;
     private IEnumerator<ExternalSortStep>? _enumerator;
     private RecordComparer? _comparer;
+    private List<TableRecord>? _workingRows; // записи после фильтра (их и сортируем)
     private bool _finished;
     private int _currentStepNo;
     private string? _loadedPath;
@@ -54,6 +55,18 @@ public partial class Task2ViewModel : ObservableObject
     [ObservableProperty]
     private int _selectedDirectionIndex; // 0 — возрастание, 1 — убывание
 
+    /// <summary>Фильтр записей перед сортировкой: 0 — без фильтра, иначе индекс колонки из FilterOptions − 1.</summary>
+    [ObservableProperty]
+    private int _filterColumnIndex;
+
+    /// <summary>Значение фильтра (точное совпадение без учёта регистра).</summary>
+    [ObservableProperty]
+    private string _filterValue = "";
+
+    /// <summary>Выбранный пример таблицы из ТЗ (индекс комбобокса).</summary>
+    [ObservableProperty]
+    private int _selectedSampleIndex;
+
     [ObservableProperty]
     private int _selectedSorterIndex;
 
@@ -63,6 +76,22 @@ public partial class Task2ViewModel : ObservableObject
     public IReadOnlyList<string> SorterNames { get; }
     public IReadOnlyList<string> KeyTypes { get; } = new[] { "Автоопределение", "Число", "Строка" };
     public IReadOnlyList<string> Directions { get; } = new[] { "По возрастанию", "По убыванию" };
+
+    // ---------- Примеры таблиц из ТЗ ----------
+
+    /// <summary>Названия примеров для комбобокса (порядок совпадает с _sampleFiles).</summary>
+    public IReadOnlyList<string> SampleNames { get; } =
+    [
+        "Страны: страна, континент, столица, площадь, население",
+        "Химические вещества: класс, название, масса",
+        "Русские слова (один атрибут)",
+    ];
+
+    private static readonly string[] _sampleFiles = ["strany.csv", "veschestva.csv", "slova.csv"];
+
+    /// <summary>Варианты фильтра: «без фильтра» + все колонки таблицы.</summary>
+    public IReadOnlyList<string> FilterOptions =>
+        new[] { "(без фильтра)" }.Concat(Table?.Headers ?? Enumerable.Empty<string>()).ToArray();
 
     public bool IsMultiway => _sorters.Count > 0 && _sorters[Math.Clamp(SelectedSorterIndex, 0, _sorters.Count - 1)].NeedsK;
 
@@ -109,7 +138,12 @@ public partial class Task2ViewModel : ObservableObject
         NotifyCanStart();
     }
 
-    partial void OnTableChanged(CsvTable? value) => NotifyCanStart();
+    partial void OnTableChanged(CsvTable? value)
+    {
+        NotifyCanStart();
+        OnPropertyChanged(nameof(FilterOptions));
+        FilterColumnIndex = 0;
+    }
 
     partial void OnSelectedKeyColumnChanged(string? value) => NotifyCanStart();
 
@@ -223,11 +257,66 @@ public partial class Task2ViewModel : ObservableObject
         NotifyCanStart();
     }
 
+    /// <summary>Загрузить пример таблицы из папки Samples (файлы копируются рядом с программой).</summary>
+    [RelayCommand]
+    private async Task LoadSampleAsync()
+    {
+        int index = Math.Clamp(SelectedSampleIndex, 0, _sampleFiles.Length - 1);
+        var dir = System.IO.Path.Combine(AppContext.BaseDirectory, "Samples");
+        var path = System.IO.Path.Combine(dir, _sampleFiles[index]);
+        if (!File.Exists(path))
+        {
+            StatusMessage = $"Файл примера не найден: {path}";
+            return;
+        }
+        await LoadFromFileAsync(path);
+        StatusMessage = $"Загружен пример «{SampleNames[index]}».";
+    }
+
+    /// <summary>
+    /// Отбор записей перед сортировкой (примеры 1 и 2 из ТЗ: «заданного континента»,
+    /// «указанного класса»). Совпадение по колонке — точное, без учёта регистра.
+    /// Возвращает null, если фильтр ничего не отобрал (запуск сортировки отменяется).
+    /// </summary>
+    public List<TableRecord>? ApplyFilter()
+    {
+        if (Table is null) return null;
+        var rows = Table.Rows.ToList();
+        if (FilterColumnIndex <= 0 || FilterOptions.Count <= FilterColumnIndex) return rows;
+
+        var column = Table.Headers[FilterColumnIndex - 1];
+        var col = Table.IndexOf(column);
+        var value = FilterValue.Trim();
+        if (value.Length == 0) return rows;
+
+        var filtered = rows.Where(r => string.Equals(r[col].Trim(), value, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (filtered.Count == 0)
+        {
+            StatusMessage = $"Фильтр «{column} = {value}» ничего не отобрал — сортировка не запущена.";
+            return null;
+        }
+        return filtered;
+    }
+
+    /// <summary>Описание применённого фильтра для строки статуса.</summary>
+    private string FilterDescription(int taken)
+    {
+        if (Table is null || FilterColumnIndex <= 0 || FilterOptions.Count <= FilterColumnIndex) return "";
+        var column = Table.Headers[FilterColumnIndex - 1];
+        var value = FilterValue.Trim();
+        if (value.Length == 0) return "";
+        return $" Фильтр: {column} = {value} (отобрано {taken} из {Table.Rows.Count}).";
+    }
+
     [RelayCommand]
     private void Start()
     {
         if (!CanStart) return;
         if (_finished) ResetRun();
+
+        var working = ApplyFilter();
+        if (working is null) return;
+        _workingRows = working;
 
         var cmp = new RecordComparer(
             SelectedKeyColumn!, SelectedKeyType,
@@ -241,7 +330,7 @@ public partial class Task2ViewModel : ObservableObject
         _engine.Reset();
         _engine.DelayMs = (int)Math.Clamp(DelayMs, 0, 2000);
         _cts = new CancellationTokenSource();
-        _enumerator = sorter.GetSteps(Table.Rows.ToList(), cmp).GetEnumerator();
+        _enumerator = sorter.GetSteps(_workingRows, cmp).GetEnumerator();
         IsPaused = false;
         IsPlaying = true;
         OnPropertyChanged(nameof(CanPause));
@@ -279,13 +368,16 @@ public partial class Task2ViewModel : ObservableObject
         if (_finished) ResetRun();
         if (_enumerator is null)
         {
+            var working = ApplyFilter();
+            if (working is null) return;
+            _workingRows = working;
             var cmp = new RecordComparer(
                 SelectedKeyColumn!, SelectedKeyType,
                 SelectedDirectionIndex == 1, Table!.Headers);
             _comparer = cmp;
             var sorter = _sorters[Math.Clamp(SelectedSorterIndex, 0, _sorters.Count - 1)];
             if (sorter is MultiwayMergeSorter multi) multi.K = Math.Clamp(MultiwayK, 2, 8);
-            _enumerator = sorter.GetSteps(Table.Rows.ToList(), cmp).GetEnumerator();
+            _enumerator = sorter.GetSteps(_workingRows, cmp).GetEnumerator();
         }
         if (_enumerator.MoveNext())
         {
@@ -355,14 +447,15 @@ public partial class Task2ViewModel : ObservableObject
         IsPaused = false;
         OnPropertyChanged(nameof(CanPause));
         NotifyCanStart();
-        if (_comparer is not null && Table is not null)
+        if (_comparer is not null && _workingRows is not null)
         {
-            var rows = Table.Rows.OrderBy(r => r, _comparer).ToList();
-            var result = new CsvTable { Headers = Table.Headers, Separator = Table.Separator };
+            var rows = _workingRows.OrderBy(r => r, _comparer).ToList();
+            var result = new CsvTable { Headers = Table!.Headers, Separator = Table.Separator };
             foreach (var r in rows) result.Rows.Add(r);
             ResultTable = result;
             HasResult = true;
-            ResultInfo = $"{rows.Count} записей, ключ «{_comparer.KeyColumn}», " + (_comparer.Descending ? "по убыванию" : "по возрастанию");
+            ResultInfo = $"{rows.Count} записей, ключ «{_comparer.KeyColumn}», " +
+                         (_comparer.Descending ? "по убыванию" : "по возрастанию") + FilterDescription(rows.Count);
         }
     }
 
