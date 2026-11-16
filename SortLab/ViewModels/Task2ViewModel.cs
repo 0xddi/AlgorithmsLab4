@@ -128,7 +128,7 @@ public partial class Task2ViewModel : ObservableObject
 
     public bool CanStart => Table is not null && SelectedKeyColumn is not null && !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
-    public bool CanStep => !IsPlaying;
+    public bool CanStep => !IsPlaying && (CanStart || _enumerator is not null);
 
     partial void OnSelectedSorterIndexChanged(int value)
     {

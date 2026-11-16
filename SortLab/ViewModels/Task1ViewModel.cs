@@ -32,7 +32,7 @@ public partial class Task1ViewModel : ObservableObject
     public string AlgorithmDescription => SelectedAlgorithm.Description;
 
     [ObservableProperty]
-    private int _arraySize = 24;
+    private int _arraySize = 8;
 
     [ObservableProperty]
     private string _manualInput = "";
@@ -76,7 +76,7 @@ public partial class Task1ViewModel : ObservableObject
 
     public bool CanStart => !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
-    public bool CanContinueOrStep => IsPaused || (!IsPlaying && !IsPaused);
+    public bool CanStep => IsPaused || (!IsPlaying && !IsPaused);
 
     public Task1ViewModel(IReadOnlyList<ISortAlgorithm> algorithms, SettingsViewModel settings)
     {
@@ -84,7 +84,13 @@ public partial class Task1ViewModel : ObservableObject
         Settings = settings;
         _selectedAlgorithm = algorithms[0];
         _delayMs = settings.ToSettings().DefaultDelayMs;
-        GenerateArray();
+        ManualInput = "3, 8, 5, 2, 7, 4, 6, 1";
+        ApplyManual();
+    }
+
+    partial void OnSelectedAlgorithmChanged(ISortAlgorithm value)
+    {
+        if (_initialArray.Length > 0) SetInitialArray(_initialArray);
     }
 
     partial void OnDelayMsChanged(double value) => _engine.DelayMs = (int)Math.Clamp(value, 0, 2000);
@@ -93,7 +99,7 @@ public partial class Task1ViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(CanStart));
         OnPropertyChanged(nameof(CanPause));
-        OnPropertyChanged(nameof(CanContinueOrStep));
+        OnPropertyChanged(nameof(CanStep));
     }
 
     // ---------- Данные ----------
@@ -230,7 +236,7 @@ public partial class Task1ViewModel : ObservableObject
     [RelayCommand]
     private void Reset()
     {
-        ResetInternal();
+        SetInitialArray(_initialArray);
     }
 
     private void ResetInternal()

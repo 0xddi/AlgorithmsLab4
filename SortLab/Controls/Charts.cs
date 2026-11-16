@@ -286,13 +286,28 @@ public class LineChart : Control
         }
 
         int cats = categories.Count;
-        var xs = new double[cats];
+        var lengths = new int[cats];
         for (int i = 0; i < cats; i++)
         {
-            xs[i] = cats == 1 ? left + plotW / 2 : left + plotW * i / (cats - 1);
+            if (int.TryParse(categories[i], out lengths[i])) continue;
+            lengths = Enumerable.Range(0, cats).ToArray();
+            break;
+        }
+        int minimum = lengths.Min();
+        double range = (double)lengths.Max() - minimum;
+        var xs = new double[cats];
+        double lastLabelRight = double.NegativeInfinity;
+        for (int i = 0; i < cats; i++)
+        {
+            xs[i] = range == 0 ? left + plotW / 2 : left + plotW * ((double)lengths[i] - minimum) / range;
             var catFt = new FormattedText(categories[i], CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
                 typeface, 11, labelBrush);
-            context.DrawText(catFt, new Point(xs[i] - catFt.Width / 2, top + plotH + 6));
+            double labelLeft = Math.Clamp(xs[i] - catFt.Width / 2, 0, Math.Max(0, bounds.Width - catFt.Width));
+            if (labelLeft >= lastLabelRight + 4)
+            {
+                context.DrawText(catFt, new Point(labelLeft, top + plotH + 6));
+                lastLabelRight = labelLeft + catFt.Width;
+            }
         }
 
         var pen = new Pen(GridBrush ?? Brushes.LightGray, 1);

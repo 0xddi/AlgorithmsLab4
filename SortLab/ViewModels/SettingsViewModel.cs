@@ -75,7 +75,7 @@ public partial class SettingsViewModel : ObservableObject
         // [схема][тёмная?] => (обычный, сравнение, перестановка, отсортирован, опорный, подписи, сетка)
         (string n, string c, string s, string so, string p, string l, string g) palette = (ColorSchemeIndex, DarkTheme) switch
         {
-            (0, false) => ("#4F6EF7", "#FFB300", "#EF5350", "#43A047", "#AB47BC", "#5A6478", "#D5DBE8"),
+            (0, false) => ("#91B9AF", "#A34424", "#CE8153", "#08645E", "#746398", "#314D4E", "#D4DEDC"),
             (0, true) => ("#7C93FF", "#FFC53D", "#FF7070", "#66BB6A", "#CE93D8", "#AAB3C6", "#39435A"),
             (1, false) => ("#00A8CC", "#FF8F00", "#E53935", "#7CB342", "#D81B60", "#5A6478", "#D5DBE8"),
             (1, true) => ("#22D3EE", "#FFD54F", "#FF5252", "#9CCC65", "#F06292", "#AAB3C6", "#39435A"),
@@ -90,7 +90,7 @@ public partial class SettingsViewModel : ObservableObject
         BarPivotBrush = new SolidColorBrush(Color.Parse(palette.p));
         LabelBrush = new SolidColorBrush(Color.Parse(palette.l));
         GridBrush = new SolidColorBrush(Color.Parse(palette.g));
-        ChartBrush1 = BarNormalBrush;
+        ChartBrush1 = ColorSchemeIndex == 0 ? BarSortedBrush : BarNormalBrush;
         ChartBrush2 = BarCompareBrush;
         ChartBrush3 = BarSortedBrush;
         ChartBrush4 = BarPivotBrush;

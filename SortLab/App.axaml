@@ -9,27 +9,29 @@
       <ResourceDictionary.ThemeDictionaries>
 
         <ResourceDictionary x:Key="Light">
-          <SolidColorBrush x:Key="WindowBgBrush">#F3F5F8</SolidColorBrush>
+          <SolidColorBrush x:Key="NoteBrush">#DEF2ED</SolidColorBrush>
+          <SolidColorBrush x:Key="WindowBgBrush">#F4F6F3</SolidColorBrush>
           <SolidColorBrush x:Key="CardBgBrush">#FFFFFF</SolidColorBrush>
-          <SolidColorBrush x:Key="CardBorderBrush">#DDE3EE</SolidColorBrush>
-          <SolidColorBrush x:Key="PanelBgBrush">#F2F5FA</SolidColorBrush>
-          <SolidColorBrush x:Key="SubtleTextBrush">#5A6478</SolidColorBrush>
-          <SolidColorBrush x:Key="AccentBrush">#405BC7</SolidColorBrush>
-          <SolidColorBrush x:Key="ChipBgBrush">#E7EBF4</SolidColorBrush>
-          <SolidColorBrush x:Key="HighlightBrush">#FFD54F</SolidColorBrush>
-          <SolidColorBrush x:Key="DangerBrush">#E53935</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBorderBrush">#D4DEDC</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelBgBrush">#EFF4F1</SolidColorBrush>
+          <SolidColorBrush x:Key="SubtleTextBrush">#52686A</SolidColorBrush>
+          <SolidColorBrush x:Key="AccentBrush">#08645E</SolidColorBrush>
+          <SolidColorBrush x:Key="ChipBgBrush">#E1EDE8</SolidColorBrush>
+          <SolidColorBrush x:Key="HighlightBrush">#EAA782</SolidColorBrush>
+          <SolidColorBrush x:Key="DangerBrush">#AD362E</SolidColorBrush>
           <SolidColorBrush x:Key="OkBrush">#2E7D32</SolidColorBrush>
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="NoteBrush">#263F3E</SolidColorBrush>
           <SolidColorBrush x:Key="WindowBgBrush">#181D26</SolidColorBrush>
           <SolidColorBrush x:Key="CardBgBrush">#212836</SolidColorBrush>
           <SolidColorBrush x:Key="CardBorderBrush">#333C4E</SolidColorBrush>
           <SolidColorBrush x:Key="PanelBgBrush">#2A3242</SolidColorBrush>
           <SolidColorBrush x:Key="SubtleTextBrush">#A9B2C4</SolidColorBrush>
-          <SolidColorBrush x:Key="AccentBrush">#7C93FF</SolidColorBrush>
+          <SolidColorBrush x:Key="AccentBrush">#367970</SolidColorBrush>
           <SolidColorBrush x:Key="ChipBgBrush">#2E3646</SolidColorBrush>
-          <SolidColorBrush x:Key="HighlightBrush">#FFD54F</SolidColorBrush>
+          <SolidColorBrush x:Key="HighlightBrush">#EAA782</SolidColorBrush>
           <SolidColorBrush x:Key="DangerBrush">#FF6B6B</SolidColorBrush>
           <SolidColorBrush x:Key="OkBrush">#7CD47C</SolidColorBrush>
         </ResourceDictionary>
@@ -52,6 +54,23 @@
     <!-- Обязательный include: без него DataGrid не имеет шаблона и не отображает строки -->
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
 
+    <Style Selector="ListBox.navigation ListBoxItem">
+      <Setter Property="Foreground" Value="#E4EEEA"/>
+      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="Margin" Value="0,2"/>
+      <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+    <Style Selector="ListBox.navigation ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="#D4EDDF"/>
+      <Setter Property="Foreground" Value="#163B3B"/>
+    </Style>
+    <Style Selector="ListBox.navigation ListBoxItem:pointerover:not(:selected) /template/ ContentPresenter">
+      <Setter Property="Background" Value="#2D5551"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="TextBlock.step">
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
     <!-- Карточки -->
     <Style Selector="Border.card">
       <Setter Property="Background" Value="{DynamicResource CardBgBrush}" />
@@ -59,7 +78,7 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Padding" Value="12" />
-      <Setter Property="BoxShadow" Value="0 2 6 0 #100F1B32" />
+      <Setter Property="BoxShadow" Value="0 1 3 0 #080F1B22" />
     </Style>
 
     <Style Selector="Border.card.accentTop">
@@ -68,14 +87,14 @@
     </Style>
 
     <Style Selector="TextBlock.h1">
-      <Setter Property="FontSize" Value="20" />
+      <Setter Property="FontSize" Value="30" />
       <Setter Property="FontWeight" Value="Bold" />
     </Style>
 
     <Style Selector="TextBlock.h2">
-      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontSize" Value="19" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+
     </Style>
 
     <Style Selector="TextBlock.subtle">

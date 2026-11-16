@@ -17,6 +17,7 @@ public partial class Task3ViewModel : ObservableObject
     private readonly BenchmarkService _benchmark;
     private readonly PlaybackEngine _engine = new();
     private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _benchmarkCancellation;
     private IEnumerator<StringSortStep>? _enumerator;
     private string[] _words = [];
     private string[] _sortedWords = [];
@@ -66,6 +67,9 @@ public partial class Task3ViewModel : ObservableObject
     private System.Collections.ObjectModel.ObservableCollection<WordFrequency> _frequencies = new();
 
     [ObservableProperty]
+    private int _maxFrequency = 1;
+
+    [ObservableProperty]
     private string _frequencyInfo = "";
 
     [ObservableProperty]
@@ -85,7 +89,7 @@ public partial class Task3ViewModel : ObservableObject
 
     public bool CanStart => _words.Length > 0 && !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
-    public bool CanStep => !IsPlaying;
+    public bool CanStep => _words.Length > 0 && !IsPlaying;
 
     // ---------- Эксперименты ----------
 
@@ -131,11 +135,14 @@ public partial class Task3ViewModel : ObservableObject
         Settings = settings;
         Algorithms = algorithms.Select(a => (ISortAlgorithmOption)new AlgorithmOption(a)).ToList();
         _selectedAlgorithm = Algorithms[0];
-        InputText = "the quick brown fox jumps over the lazy dog\nthe dog barks and the fox runs away\na cat and a dog meet in the park";
+        InputText = "birch apple elm apple birch apple";
+        ApplyText();
         _delayMs = 50;
     }
 
     partial void OnDelayMsChanged(double value) => _engine.DelayMs = (int)Math.Clamp(value, 0, 2000);
+
+    partial void OnSelectedAlgorithmChanged(ISortAlgorithmOption value) => ApplyText();
 
     partial void OnIgnoreCaseChanged(bool value)
     {
@@ -293,6 +300,7 @@ public partial class Task3ViewModel : ObservableObject
         IsPaused = false;
         _engine.Resume();
         Frequencies = new(TextProcessor.CountFrequencies(_sortedWords));
+        MaxFrequency = Frequencies.Count == 0 ? 1 : Frequencies.Max(f => f.Count);
         FrequencyInfo = $"Уникальных слов: {Frequencies.Count}";
         Explanation = "Готово! Слова отсортированы, частоты подсчитаны.";
         OnPropertyChanged(nameof(CanPause));
@@ -391,7 +399,7 @@ public partial class Task3ViewModel : ObservableObject
         BenchRunning = true;
         HasBenchResults = false;
         OnPropertyChanged(nameof(CanRunBench));
-        _cts = new CancellationTokenSource();
+        _benchmarkCancellation = new CancellationTokenSource();
         try
         {
             int[] lengths = _benchLengths.ToArray();
@@ -404,14 +412,13 @@ public partial class Task3ViewModel : ObservableObject
                 {
                     BenchProgress = pct;
                     BenchStatus = msg;
-                }), _cts.Token);
+                }), _benchmarkCancellation.Token);
 
             BenchmarkResults = new(results);
             ChartCategories = lengths.Select(l => l.ToString()).ToList();
             ChartSeries = algos.Select((a, i) => new ChartSeriesData(a.Name,
                     lengths.Select(l => results.Where(r => r.Length == l && r.Algorithm == a.Name)
                         .Select(r => r.AvgMs).FirstOrDefault())
-                        .Select(v => v == 0 ? 0.1 : v) // нулевые времена не рисуем
                         .ToList()))
                 .ToList();
             HasBenchResults = true;
@@ -428,6 +435,8 @@ public partial class Task3ViewModel : ObservableObject
         }
         finally
         {
+            _benchmarkCancellation.Dispose();
+            _benchmarkCancellation = null;
             BenchRunning = false;
             OnPropertyChanged(nameof(CanRunBench));
         }
@@ -436,7 +445,7 @@ public partial class Task3ViewModel : ObservableObject
     [RelayCommand]
     private void CancelBenchmark()
     {
-        _cts?.Cancel();
+        _benchmarkCancellation?.Cancel();
     }
 
     /// <summary>«прогон» / «прогона» / «прогонов» по правилам русского языка.</summary>

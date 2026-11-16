@@ -30,10 +30,10 @@ public partial class App : Application
         // Простой ручной DI: создаём сервисы и ViewModel-и здесь.
         ISortAlgorithm[] sortAlgorithms =
         {
+            new ImprovedBubbleSort(),
             new InsertionSort(),
             new ShellSort(),
             new SelectionSort(),
-            new ImprovedBubbleSort(),
             new HeapSort(),
             new QuickSort(),
         };

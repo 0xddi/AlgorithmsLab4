@@ -158,10 +158,13 @@ public class SortVisualizer : Control
         }
 
         int n = bars.Count;
-        const double topPad = 8, bottomPad = 4;
+        const double topPad = 8;
+        bool showPositions = ShowLabels && bounds.Width / n >= 32;
+        double bottomPad = showPositions ? 22 : 4;
         double labelSpace = ShowLabels ? 18 : 0;
-        double gap = n > 60 ? 1 : 2;
-        double barW = (bounds.Width - (n - 1) * gap) / n;
+        double slotWidth = bounds.Width / n;
+        double gap = Math.Min(28, slotWidth * 0.30);
+        double barW = slotWidth - gap;
         if (barW <= 0) return;
 
         double t = Progress();
@@ -173,7 +176,7 @@ public class SortVisualizer : Control
         }
         double plotHeight = Math.Max(1, bounds.Height - topPad - bottomPad - labelSpace);
 
-        double fontSize = Math.Clamp(barW * 0.6, 7, 12);
+        double fontSize = Math.Clamp(barW * 0.6, 7, 16);
 
         if (fontSize != _labelSize)
         {
@@ -185,23 +188,24 @@ public class SortVisualizer : Control
             var bar = bars[i];
             double slot = t >= 1 ? i : _fromSlot[i] + (i - _fromSlot[i]) * t;
             double value = t >= 1 ? bar.Value : _fromValue[i] + (bar.Value - _fromValue[i]) * t;
-            double x = slot * (barW + gap);
+            double x = slot * slotWidth + gap / 2;
             double h = Math.Max(2, value / max * plotHeight);
-            double y = topPad + plotHeight - h;
-            var rect = new RoundedRect(new Rect(x, y, barW, h), Math.Min(3, barW / 2));
+            double y = topPad + labelSpace + plotHeight - h;
+            var rect = new RoundedRect(new Rect(x, y, barW, h), Math.Min(7, barW / 2));
             context.DrawRectangle(BrushFor(bar.Mark), null, rect);
 
             if (ShowLabels && barW >= 9)
             {
-                if (!_labels.TryGetValue(bar.Value, out var ft))
+                var ft = Label(bar.Value);
+                if (showPositions)
                 {
-                    ft = new FormattedText(bar.Value.ToString(), CultureInfo.InvariantCulture,
-                        FlowDirection.LeftToRight, LabelTypeface, fontSize, LabelBrush ?? Brushes.Gray);
-                    _labels.Add(bar.Value, ft);
+                    var position = Label(i + 1);
+                    double center = (i + 0.5) * slotWidth;
+                    context.DrawText(position, new Point(center - position.Width / 2, bounds.Height - bottomPad + 2));
                 }
                 if (ft.Width > barW + gap) continue;
                 double tx = x + (barW - ft.Width) / 2;
-                context.DrawText(ft, new Point(tx, topPad + plotHeight + 2));
+                context.DrawText(ft, new Point(tx, y - ft.Height));
             }
         }
 
@@ -209,7 +213,18 @@ public class SortVisualizer : Control
 
         // Базовая линия под столбиками.
         var pen = new Pen(LabelBrush ?? Brushes.Gray, 1, null, PenLineCap.Round);
-        context.DrawLine(pen, new Point(0, topPad + plotHeight), new Point(bounds.Width, topPad + plotHeight));
+        context.DrawLine(pen, new Point(0, topPad + labelSpace + plotHeight), new Point(bounds.Width, topPad + labelSpace + plotHeight));
+    }
+
+    private FormattedText Label(int number)
+    {
+        if (!_labels.TryGetValue(number, out var text))
+        {
+            text = new FormattedText(number.ToString(), CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight, LabelTypeface, _labelSize, LabelBrush ?? Brushes.Gray);
+            _labels.Add(number, text);
+        }
+        return text;
     }
 
     private IBrush BrushFor(StepMark mark) => mark switch
