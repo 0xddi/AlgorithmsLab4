@@ -125,8 +125,15 @@
       <Grid ColumnDefinitions="200,*,*" ColumnSpacing="12">
         <StackPanel Grid.Column="0" Spacing="8">
           <TextBlock Text="Эксперименты" Classes="h2" />
-          <TextBlock Text="Длины: 100, 500, 1000, 2000, 5000 слов. Показывается среднее время."
-                     Classes="subtle" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding BenchLengthsText}" Classes="subtle" TextWrapping="Wrap" />
+          <NumericUpDown Minimum="50" Maximum="50000" Increment="50" Value="{Binding CustomBenchLength}"
+                         HorizontalAlignment="Stretch" />
+          <Grid ColumnDefinitions="*,*,6">
+            <Button Grid.Column="0" Content="Добавить" Command="{Binding AddBenchLengthCommand}"
+                    HorizontalContentAlignment="Center" />
+            <Button Grid.Column="1" Content="Сбросить" Command="{Binding ResetBenchLengthsCommand}"
+                    HorizontalContentAlignment="Center" />
+          </Grid>
           <TextBlock Text="Прогонов на алгоритм (1–20)" Classes="subtle" />
           <NumericUpDown Minimum="1" Maximum="20" Increment="1" Value="{Binding BenchRuns}"
                          Width="120" HorizontalAlignment="Left" />

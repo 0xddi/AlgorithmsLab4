@@ -213,6 +213,7 @@ public partial class Task2ViewModel : ObservableObject
         _finished = false;
         Comparisons = 0;
         Moves = 0;
+        Log.Clear();
         Tapes = [];
         PhaseText = "";
         Explanation = "Выберите ключевой атрибут и запустите сортировку.";
@@ -384,7 +385,7 @@ public partial class Task2ViewModel : ObservableObject
     /// <summary>Показать кадр: состояние последнего шага + счётчики по всем шагам кадра.</summary>
     private void ApplyFrame(ExternalSortStep step, int steps, int cmp, int mov)
     {
-        Tapes = step.Tapes;
+        Tapes = CompactTapes(step.Tapes);
         PhaseText = step.Phase;
         Explanation = step.Explanation;
         Comparisons += cmp;
@@ -410,4 +411,49 @@ public partial class Task2ViewModel : ObservableObject
         ApplyFrame(step, 1,
             cmp: step.Op == SortOpType.Compare ? 1 : 0,
             mov: step.Op == SortOpType.Assign ? 1 : 0);
+
+    // ---------- Ограничение визуализации лент ----------
+
+    /// <summary>Максимум отрезков, показываемых на одной ленте.</summary>
+    private const int MaxSeriesShown = 8;
+    /// <summary>Максимум записей, показываемых в одном отрезке.</summary>
+    private const int MaxChipsShown = 24;
+
+    /// <summary>
+    /// Обрезаем содержимое лент для отображения: не более 8 отрезков на ленту и 24 записей
+    /// в отрезке, лишнее заменяем подписью «…ещё N». Иначе при больших файлах записи
+    /// растягивают ленты по горизонтали, а UI захлёбывается на тысячах визуальных элементов.
+    /// </summary>
+    private static IReadOnlyList<TapeState> CompactTapes(IReadOnlyList<TapeState>? tapes)
+    {
+        if (tapes is null || tapes.Count == 0) return tapes ?? [];
+        var result = new List<TapeState>(tapes.Count);
+        foreach (var tape in tapes)
+        {
+            IReadOnlyList<SeriesBlock> shown = tape.Series;
+            if (tape.Series.Count > MaxSeriesShown)
+            {
+                var blocks = tape.Series.Take(MaxSeriesShown).ToList();
+                blocks.Add(new SeriesBlock([new ChipVm
+                {
+                    Text = $"… ещё отрезков: {tape.Series.Count - MaxSeriesShown}",
+                }]));
+                shown = blocks;
+            }
+            var compact = new List<SeriesBlock>(shown.Count);
+            foreach (var block in shown)
+            {
+                if (block.Chips.Count <= MaxChipsShown)
+                {
+                    compact.Add(block);
+                    continue;
+                }
+                var head = block.Chips.Take(MaxChipsShown).ToList();
+                head.Add(new ChipVm { Text = $"…+{block.Chips.Count - MaxChipsShown}" });
+                compact.Add(new SeriesBlock(head));
+            }
+            result.Add(new TapeState(tape.Name, compact));
+        }
+        return result;
+    }
 }

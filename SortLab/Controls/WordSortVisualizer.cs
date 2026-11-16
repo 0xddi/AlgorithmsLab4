@@ -17,6 +17,8 @@ public class WordSortVisualizer : Control
 {
     private const int AnimMs = 180;   // длительность анимации перестановки
     private const double GapX = 6, GapY = 6, PadX = 9, PadY = 3;
+    /// <summary>Резерв по высоте под подпись «… и ещё N слов» внизу.</summary>
+    private const double FooterReserve = 20;
     private static readonly IBrush MarkedTextBrush = new SolidColorBrush(Color.Parse("#212121"));
 
     static WordSortVisualizer()
@@ -244,6 +246,10 @@ public class WordSortVisualizer : Control
         // перенос по строкам, а если по высоте не влезает — показываем сколько поместилось.
         _fontSize = words.Count <= 60 ? 12 : words.Count <= 150 ? 11 : words.Count <= 220 ? 10 : 9;
         TryLayout(words, typeface, _fontSize, availW, bounds.Height);
+        // Если есть скрытые слова — резервируем снизу место под подпись «… и ещё N слов»
+        // и пересчитываем раскладку, чтобы подпись не наезжала на чипы.
+        if (_hiddenCount > 0)
+            TryLayout(words, typeface, _fontSize, availW, bounds.Height - FooterReserve);
         LogLayout($"  font={_fontSize} visible={_visibleCount} hidden={_hiddenCount}");
     }
 

@@ -123,7 +123,7 @@
                             <ItemsControl ItemsSource="{Binding Chips}">
                               <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                  <StackPanel Orientation="Horizontal" />
+                                  <WrapPanel Orientation="Vertical" MaxHeight="140" />
                                 </ItemsPanelTemplate>
                               </ItemsControl.ItemsPanel>
                               <ItemsControl.ItemTemplate>

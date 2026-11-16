@@ -108,6 +108,15 @@ public partial class Task3ViewModel : ObservableObject
     [ObservableProperty]
     private int _benchRuns = 3;
 
+    /// <summary>Своя длина текста для экспериментов (вводится пользователем).</summary>
+    [ObservableProperty]
+    private int _customBenchLength = 300;
+
+    /// <summary>Текущий набор длин для бенчмарка (стандартные + добавленные пользователем).</summary>
+    private List<int> _benchLengths = [100, 500, 1000, 2000, 5000];
+
+    public string BenchLengthsText => "Длины: " + string.Join(", ", _benchLengths) + " слов.";
+
     [ObservableProperty]
     private string _benchStatus = "Эксперименты не запускались.";
 
@@ -373,6 +382,36 @@ public partial class Task3ViewModel : ObservableObject
     // ---------- Эксперименты ----------
 
     [RelayCommand]
+    private void AddBenchLength()
+    {
+        int len = Math.Clamp(CustomBenchLength, 50, 50000);
+        if (len != CustomBenchLength)
+        {
+            CustomBenchLength = len;
+            StatusMessage = "Длина должна быть от 50 до 50000 слов.";
+            return;
+        }
+        StatusMessage = "";
+        if (_benchLengths.Contains(len))
+        {
+            BenchStatus = $"Длина {len} уже есть в списке.";
+            return;
+        }
+        _benchLengths.Add(len);
+        _benchLengths.Sort();
+        OnPropertyChanged(nameof(BenchLengthsText));
+        BenchStatus = $"Длина {len} добавлена — запустите эксперименты заново.";
+    }
+
+    [RelayCommand]
+    private void ResetBenchLengths()
+    {
+        _benchLengths = [100, 500, 1000, 2000, 5000];
+        OnPropertyChanged(nameof(BenchLengthsText));
+        BenchStatus = "Длины возвращены к стандартным (100, 500, 1000, 2000, 5000).";
+    }
+
+    [RelayCommand]
     private async Task RunBenchmarkAsync()
     {
         if (BenchRunning) return;
@@ -382,7 +421,7 @@ public partial class Task3ViewModel : ObservableObject
         _cts = new CancellationTokenSource();
         try
         {
-            int[] lengths = [100, 500, 1000, 2000, 5000];
+            int[] lengths = _benchLengths.ToArray();
             var algos = _algorithms.ToArray();
             int runs = Math.Clamp(BenchRuns, 1, 20);
             BenchProgress = 0;
