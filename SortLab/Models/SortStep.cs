@@ -27,7 +27,8 @@ public sealed record SortStep(
     StepMark[] Marks,
     int IndexA,
     int IndexB,
-    string Explanation);
+    string Explanation,
+    int? SavedKey = null);
 
 /// <summary>
 /// Контекст выполнения алгоритма: массив, подсветка, удобные методы для формирования шагов.

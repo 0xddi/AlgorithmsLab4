@@ -22,4 +22,5 @@ public sealed record ExternalSortStep(
     IReadOnlyList<TapeState> Tapes,
     string Explanation,
     string LogIndices,
-    string LogValues);
+    string LogValues,
+    IReadOnlyList<TableRecord>? Result = null);

@@ -53,22 +53,16 @@ public sealed class RecordComparer : IComparer<TableRecord>
         if (x is null || y is null) return x is null && y is null ? 0 : (x is null ? -1 : 1);
         var sx = x[Index];
         var sy = y[Index];
-        int r;
-        var useNumber = Type == KeyType.Number
-                        || (Type == KeyType.Auto
-                            && double.TryParse(sx, System.Globalization.NumberStyles.Any,
-                                System.Globalization.CultureInfo.InvariantCulture, out _)
-                            && double.TryParse(sy, System.Globalization.NumberStyles.Any,
-                                System.Globalization.CultureInfo.InvariantCulture, out _));
-        if (useNumber
-            && double.TryParse(sx, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var dx)
-            && double.TryParse(sy, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var dy))
+        int r = System.Globalization.CultureInfo.GetCultureInfo("ru-RU").CompareInfo.Compare(
+            sx, sy, System.Globalization.CompareOptions.IgnoreCase);
+        if (Type != KeyType.String)
         {
-            r = dx.CompareTo(dy);
-        }
-        else
-        {
-            r = string.Compare(sx, sy, StringComparison.OrdinalIgnoreCase);
+            bool nx = double.TryParse(sx, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var dx);
+            bool ny = double.TryParse(sy, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var dy);
+            if (nx && ny) r = dx.CompareTo(dy);
+            else if (nx != ny) r = nx ? -1 : 1;
         }
         return Descending ? -r : r;
     }

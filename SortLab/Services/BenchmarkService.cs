@@ -24,8 +24,7 @@ public sealed class BenchmarkService
 
             foreach (var len in lengths)
             {
-                var words = TextGenerator.GenerateText(len)
-                    .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var words = TextProcessor.SplitWords(TextGenerator.GenerateText(len), ignoreCase: true);
                 foreach (var algo in algorithms)
                 {
                     ct.ThrowIfCancellationRequested();

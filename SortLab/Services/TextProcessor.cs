@@ -23,19 +23,18 @@ public static partial class TextProcessor
         return words.ToArray();
     }
 
-    /// <summary>Подсчитать частоты слов. Возвращает список, упорядоченный по частоте (затем по слову).</summary>
-    public static List<Models.WordFrequency> CountFrequencies(string[] words)
+    /// <summary>Каждая группа подряд идущих одинаковых слов даёт одну строку таблицы.</summary>
+    public static List<Models.WordFrequency> CountFrequencies(string[] sortedWords)
     {
-        var dict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var w in words)
+        var result = new List<Models.WordFrequency>();
+        for (int start = 0; start < sortedWords.Length;)
         {
-            dict[w] = dict.TryGetValue(w, out var c) ? c + 1 : 1;
+            int end = start + 1;
+            while (end < sortedWords.Length && sortedWords[end] == sortedWords[start]) end++;
+            result.Add(new Models.WordFrequency { Word = sortedWords[start], Count = end - start });
+            start = end;
         }
-        return dict
-            .Select(kv => new Models.WordFrequency { Word = kv.Key, Count = kv.Value })
-            .OrderByDescending(x => x.Count)
-            .ThenBy(x => x.Word, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        return result;
     }
 }
 
