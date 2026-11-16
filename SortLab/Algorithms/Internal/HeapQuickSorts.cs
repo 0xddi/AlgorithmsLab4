@@ -47,16 +47,20 @@ public sealed class HeapSort : ISortAlgorithm
             int child = 2 * root + 1;
             if (child > end) yield break;
 
-            c.Mark(root, StepMark.Compare);
-            c.Mark(child, StepMark.Compare);
-            yield return c.S(SortOpType.Compare, root, child, $"Сравниваем родителя {c.A[root]} и ребёнка {c.A[child]}.");
             if (child + 1 <= end)
             {
+                c.Mark(child, StepMark.Compare);
                 c.Mark(child + 1, StepMark.Compare);
-                yield return c.S(SortOpType.Compare, root, child + 1, $"Сравниваем {c.A[root]} и второго ребёнка {c.A[child + 1]}: кто из детей больше?");
-                if (c.A[child + 1] > c.A[child]) child++;
+                yield return c.S(SortOpType.Compare, child, child + 1,
+                    $"Сравниваем детей {c.A[child]} и {c.A[child + 1]}: выбираем большего.");
+                c.Mark(child, StepMark.Normal);
                 c.Mark(child + 1, StepMark.Normal);
+                if (c.A[child + 1] > c.A[child]) child++;
             }
+            c.Mark(root, StepMark.Compare);
+            c.Mark(child, StepMark.Compare);
+            yield return c.S(SortOpType.Compare, root, child,
+                $"Сравниваем родителя {c.A[root]} с выбранным ребёнком {c.A[child]}.");
             if (c.A[child] > c.A[root])
             {
                 c.Swap(root, child);
@@ -68,7 +72,7 @@ public sealed class HeapSort : ISortAlgorithm
             }
             else
             {
-                yield return c.S(SortOpType.Compare, root, child, $"Родитель {c.A[root]} не меньше ребёнка — пирамида в порядке.");
+                yield return c.S(SortOpType.Info, root, child, $"Родитель {c.A[root]} не меньше ребёнка — пирамида в порядке.");
                 c.Mark(root, StepMark.Normal);
                 c.Mark(child, StepMark.Normal);
                 yield break;

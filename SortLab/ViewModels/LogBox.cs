@@ -12,7 +12,6 @@ namespace SortLab.ViewModels;
 public partial class LogBox : ObservableObject
 {
     private readonly List<LogEntry> _all = new();
-    private const int MaxEntries = 20000;
 
     public ObservableCollection<LogEntry> FilteredEntries { get; } = new();
 
@@ -39,7 +38,6 @@ public partial class LogBox : ObservableObject
 
     public void Add(LogEntry entry)
     {
-        if (_all.Count >= MaxEntries) return; // защита от переполнения UI
         _all.Add(entry);
         UpdateCount();
         if (Matches(entry))

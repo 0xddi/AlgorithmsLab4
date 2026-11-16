@@ -23,7 +23,7 @@ public sealed class InsertionSort : ISortAlgorithm
             while (j >= 0)
             {
                 c.Mark(j, StepMark.Compare);
-                yield return c.S(SortOpType.Compare, j, i, $"Сравниваем {c.A[j]} и {key}: {c.A[j]} больше {key}?");
+                yield return c.S(SortOpType.Compare, j, i, $"Сравниваем {c.A[j]} и {key}: {c.A[j]} больше {key}?") with { SavedKey = key };
                 if (c.A[j] > key)
                 {
                     c.A[j + 1] = c.A[j];
@@ -34,7 +34,7 @@ public sealed class InsertionSort : ISortAlgorithm
                 }
                 else
                 {
-                    yield return c.S(SortOpType.Compare, j, -1, $"{key} не меньше {c.A[j]} — значит, место найдено сразу справа от {c.A[j]}.");
+                    yield return c.S(SortOpType.Info, j, -1, $"{key} не меньше {c.A[j]} — значит, место найдено сразу справа от {c.A[j]}.");
                     break;
                 }
             }
@@ -70,7 +70,7 @@ public sealed class ShellSort : ISortAlgorithm
                 {
                     c.Mark(j - gap, StepMark.Compare);
                     c.Mark(j, StepMark.Swap);
-                    yield return c.S(SortOpType.Compare, j - gap, j, $"Сравниваем {c.A[j - gap]} и {key}: они стоят через {gap} клеток.");
+                    yield return c.S(SortOpType.Compare, j - gap, j, $"Сравниваем {c.A[j - gap]} и {key}: они стоят через {gap} клеток.") with { SavedKey = key };
                     if (c.A[j - gap] > key)
                     {
                         c.A[j] = c.A[j - gap];
@@ -158,7 +158,7 @@ public sealed class ImprovedBubbleSort : ISortAlgorithm
         int last = c.N - 1;
         while (last > 0)
         {
-            int newLast = 0;
+            int newLast = -1;
             for (int i = 0; i < last; i++)
             {
                 c.Mark(i, StepMark.Compare);
@@ -175,7 +175,7 @@ public sealed class ImprovedBubbleSort : ISortAlgorithm
                 c.Mark(i, StepMark.Normal);
                 c.Mark(i + 1, StepMark.Normal);
             }
-            if (newLast == 0)
+            if (newLast < 0)
             {
                 yield return c.S(SortOpType.Info, -1, -1, "Ни одного обмена не случилось — значит, всё уже по порядку!");
                 break;

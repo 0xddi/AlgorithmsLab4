@@ -60,6 +60,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow { DataContext = mainVm };
+            desktop.Exit += (_, _) => task2.ResetCommand.Execute(null);
             desktop.ShutdownRequested += (_, _) => _settingsService.Save(settingsVm.ToSettings());
         }
 

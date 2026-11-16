@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SortLab.Algorithms.Internal;
@@ -15,7 +14,6 @@ public partial class Task1ViewModel : ObservableObject
     private readonly IReadOnlyList<ISortAlgorithm> _algorithms;
     private readonly PlaybackEngine _engine = new();
     private CancellationTokenSource? _cts;
-    private Task? _playTask;
     private IEnumerator<SortStep>? _enumerator;
     private int[] _initialArray = [];
     private readonly Random _random = new();
@@ -160,7 +158,6 @@ public partial class Task1ViewModel : ObservableObject
         if (!CanStart) return;
         _engine.Reset();
         _engine.DelayMs = (int)Math.Clamp(DelayMs, 0, 2000);
-        _cts = new CancellationTokenSource();
         if (_finished)
         {
             // Прошлый прогон завершён — начинаем заново.
@@ -169,10 +166,11 @@ public partial class Task1ViewModel : ObservableObject
         if (_enumerator is null && _initialArray.Length > 0)
             _enumerator = SelectedAlgorithm.GetSteps(_initialArray).GetEnumerator();
         if (_enumerator is null) return;
+        _cts = new CancellationTokenSource();
         IsPaused = false;
         IsPlaying = true;
         UpdateStateFlags();
-        _playTask = Task.Run(() => PlayLoopAsync(_cts.Token));
+        _ = PlayLoopAsync(_cts.Token);
     }
 
     [RelayCommand]
@@ -206,30 +204,41 @@ public partial class Task1ViewModel : ObservableObject
         if (_enumerator is null && _initialArray.Length > 0)
             _enumerator = SelectedAlgorithm.GetSteps(_initialArray).GetEnumerator();
         if (_enumerator is null) return;
+        Advance();
+    }
+
+    private bool Advance()
+    {
+        if (_finished || _enumerator is null) return false;
         if (_enumerator.MoveNext())
         {
             _currentStepNo++;
-            _finished = false;
             ApplyStep(_enumerator.Current);
+            return true;
         }
-        else
-        {
-            _finished = true;
-            Explanation = "Готово! Сортировка завершена.";
-        }
+        _enumerator.Dispose();
+        _enumerator = null;
+        _finished = true;
+        IsPlaying = false;
+        IsPaused = false;
+        _engine.Resume();
+        Explanation = "Готово! Сортировка завершена.";
+        UpdateStateFlags();
+        return false;
     }
 
     [RelayCommand]
     private void Reset()
     {
-        _cts?.Cancel();
-        _engine.Reset();
-        _playTask = null;
         ResetInternal();
     }
 
     private void ResetInternal()
     {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        _engine.Reset();
         _enumerator?.Dispose();
         _enumerator = null;
         _currentStepNo = 0;
@@ -245,70 +254,25 @@ public partial class Task1ViewModel : ObservableObject
 
     private async Task PlayLoopAsync(CancellationToken ct)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
-            // Кадровый показ при нулевой задержке: шаги копятся в фоне, UI обновляется
-            // не чаще ~25 кадров/с — иначе интерфейс «не отвечает».
-            SortStep? last = null;
-            int steps = 0, cmp = 0, swp = 0, asg = 0;
-            while (_enumerator is not null && _enumerator.MoveNext())
-            {
-                _currentStepNo++;
-                var step = _enumerator.Current;
-                last = step;
-                steps++;
-                switch (step.Op)
-                {
-                    case SortOpType.Compare: cmp++; break;
-                    case SortOpType.Swap: swp++; break;
-                    case SortOpType.Assign: asg++; break;
-                }
-                if (_engine.DelayMs <= 0 && sw.ElapsedMilliseconds < 40 && steps < 5000) continue;
-
-                var s = last;
-                int st = steps, c = cmp, w = swp, a = asg;
-                last = null;
-                steps = cmp = swp = asg = 0;
-                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyFrame(s!, st, c, w, a); return (object?)null; });
-                sw.Restart();
-                await _engine.WaitAsync(ct);
-            }
-            if (last is not null)
-            {
-                var s = last;
-                int st = steps, c = cmp, w = swp, a = asg;
-                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyFrame(s!, st, c, w, a); return (object?)null; });
-            }
-            await Dispatcher.UIThread.InvokeAsync<object?>(() =>
-            {
-                Explanation = "Готово! Сортировка завершена.";
-                IsPlaying = false;
-                IsPaused = false;
-                _finished = true;
-                UpdateStateFlags();
-                return (object?)null;
-            });
+            await _engine.PlayAsync(Advance, ct);
         }
-        catch (OperationCanceledException)
-        {
-            // Отмена — нормальная ситуация (Сброс/пауза-отмена).
-        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
     }
 
-    /// <summary>Показать кадр: состояние последнего шага + счётчики по всем шагам кадра.</summary>
-    private void ApplyFrame(SortStep step, int steps, int cmp, int swp, int asg)
+    private void ApplyStep(SortStep step)
     {
         Bars = step.Marks.Zip(step.Values, (m, v) => new SortBar(v, m)).ToList();
         Explanation = step.Explanation;
-        Comparisons += cmp;
-        Swaps += swp;
-        Assignments += asg;
+        if (step.Op == SortOpType.Compare) Comparisons++;
+        if (step.Op == SortOpType.Swap) Swaps++;
+        if (step.Op == SortOpType.Assign) Assignments++;
         string indices = step.IndexA >= 0 && step.IndexB >= 0
             ? $"{step.IndexA} ↔ {step.IndexB}"
             : step.IndexA >= 0 ? $"{step.IndexA}" : "";
         string values = step.IndexA >= 0 && step.IndexB >= 0
-            ? $"{step.Values[step.IndexA]} ↔ {step.Values[step.IndexB]}"
+            ? $"{step.Values[step.IndexA]} ↔ {step.SavedKey ?? step.Values[step.IndexB]}"
             : step.IndexA >= 0 ? $"{step.Values[step.IndexA]}" : "";
         Log.Add(new LogEntry
         {
@@ -316,18 +280,12 @@ public partial class Task1ViewModel : ObservableObject
             Operation = LogBox.OpName(step.Op),
             Indices = indices,
             Values = values,
-            Explanation = steps > 1
-                ? $"{step.Explanation} (итог {steps} шагов, остальные — в счётчиках)"
-                : step.Explanation,
+            Explanation = step.Explanation,
         });
         ProgressText = _totalSteps > 0
             ? $"Шаг {_currentStepNo} из {_totalSteps}"
             : $"Шаг {_currentStepNo}";
     }
 
-    private void ApplyStep(SortStep step) =>
-        ApplyFrame(step, 1,
-            cmp: step.Op == SortOpType.Compare ? 1 : 0,
-            swp: step.Op == SortOpType.Swap ? 1 : 0,
-            asg: step.Op == SortOpType.Assign ? 1 : 0);
+
 }

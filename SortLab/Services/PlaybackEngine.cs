@@ -36,30 +36,23 @@ public sealed class PlaybackEngine
         _resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
-    /// <summary>Ожидание одного такта: сначала пауза (если включена), затем задержка.</summary>
-    public async Task WaitAsync(CancellationToken ct)
+    /// <summary>Шаги и команды управления работают на UI-потоке. При нулевой задержке
+    /// регулярно отдаём управление интерфейсу, сохраняя каждую операцию журнала.</summary>
+    public async Task PlayAsync(Func<bool> advance, CancellationToken ct)
     {
-        while (_paused)
+        var frame = Stopwatch.StartNew();
+        while (true)
         {
             ct.ThrowIfCancellationRequested();
-            await _resume.Task.WaitAsync(ct);
-        }
-        ct.ThrowIfCancellationRequested();
-        if (DelayMs > 0)
-        {
-            // Задержка «кусочками», чтобы пауза срабатывала почти мгновенно.
-            int left = DelayMs;
-            while (left > 0)
+            if (_paused) await _resume.Task.WaitAsync(ct);
+            ct.ThrowIfCancellationRequested();
+            if (!advance()) return;
+            if (DelayMs > 0) await Task.Delay(DelayMs, ct);
+            else if (frame.ElapsedMilliseconds >= 16)
             {
-                if (_paused) return; // дальше снова заходим в WaitAsync и попадём в ожидание паузы
-                int chunk = Math.Min(15, left);
-                await Task.Delay(chunk, ct);
-                left -= chunk;
+                await Task.Delay(1, ct);
+                frame.Restart();
             }
-        }
-        else
-        {
-            await Task.Yield();
         }
     }
 }

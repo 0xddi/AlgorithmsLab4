@@ -1,4 +1,3 @@
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SortLab.Algorithms.External;
@@ -14,10 +13,9 @@ public partial class Task2ViewModel : ObservableObject
     private readonly CsvService _csv;
     private readonly PlaybackEngine _engine = new();
     private CancellationTokenSource? _cts;
-    private Task? _playTask;
     private IEnumerator<ExternalSortStep>? _enumerator;
     private RecordComparer? _comparer;
-    private List<TableRecord>? _workingRows; // записи после фильтра (их и сортируем)
+    private IReadOnlyList<TableRecord>? _sortedRows;
     private bool _finished;
     private int _currentStepNo;
     private string? _loadedPath;
@@ -232,17 +230,22 @@ public partial class Task2ViewModel : ObservableObject
     [RelayCommand]
     private void Reset()
     {
-        _cts?.Cancel();
-        _engine.Reset();
-        _playTask = null;
         ResetRun();
     }
 
     private void ResetRun()
     {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        _engine.Reset();
         _enumerator?.Dispose();
         _enumerator = null;
         _comparer = null;
+        _sortedRows = null;
+        HasResult = false;
+        ResultTable = null;
+        ResultInfo = "";
         _currentStepNo = 0;
         _finished = false;
         Comparisons = 0;
@@ -314,28 +317,29 @@ public partial class Task2ViewModel : ObservableObject
         if (!CanStart) return;
         if (_finished) ResetRun();
 
-        var working = ApplyFilter();
-        if (working is null) return;
-        _workingRows = working;
-
-        var cmp = new RecordComparer(
-            SelectedKeyColumn!, SelectedKeyType,
-            SelectedDirectionIndex == 1, Table!.Headers);
-        _comparer = cmp;
-
-        // Для многопутевого слияния задаём число путей.
-        var sorter = _sorters[Math.Clamp(SelectedSorterIndex, 0, _sorters.Count - 1)];
-        if (sorter is MultiwayMergeSorter multi) multi.K = Math.Clamp(MultiwayK, 2, 8);
-
+        if (_enumerator is null && !PrepareRun()) return;
         _engine.Reset();
         _engine.DelayMs = (int)Math.Clamp(DelayMs, 0, 2000);
         _cts = new CancellationTokenSource();
-        _enumerator = sorter.GetSteps(_workingRows, cmp).GetEnumerator();
         IsPaused = false;
         IsPlaying = true;
         OnPropertyChanged(nameof(CanPause));
         NotifyCanStart();
-        _playTask = Task.Run(() => PlayLoopAsync(_cts.Token));
+        _ = PlayLoopAsync(_cts.Token);
+    }
+
+    private bool PrepareRun()
+    {
+        var working = ApplyFilter();
+        if (working is null) return false;
+        var cmp = new RecordComparer(
+            SelectedKeyColumn!, SelectedKeyType,
+            SelectedDirectionIndex == 1, Table!.Headers);
+        _comparer = cmp;
+        var sorter = _sorters[Math.Clamp(SelectedSorterIndex, 0, _sorters.Count - 1)];
+        if (sorter is MultiwayMergeSorter multi) multi.K = Math.Clamp(MultiwayK, 2, 8);
+        _enumerator = sorter.GetSteps(working, cmp).GetEnumerator();
+        return true;
     }
 
     [RelayCommand]
@@ -368,76 +372,49 @@ public partial class Task2ViewModel : ObservableObject
         if (_finished) ResetRun();
         if (_enumerator is null)
         {
-            var working = ApplyFilter();
-            if (working is null) return;
-            _workingRows = working;
-            var cmp = new RecordComparer(
-                SelectedKeyColumn!, SelectedKeyType,
-                SelectedDirectionIndex == 1, Table!.Headers);
-            _comparer = cmp;
-            var sorter = _sorters[Math.Clamp(SelectedSorterIndex, 0, _sorters.Count - 1)];
-            if (sorter is MultiwayMergeSorter multi) multi.K = Math.Clamp(MultiwayK, 2, 8);
-            _enumerator = sorter.GetSteps(_workingRows, cmp).GetEnumerator();
+            if (!PrepareRun()) return;
         }
-        if (_enumerator.MoveNext())
+        Advance();
+    }
+
+    private bool Advance()
+    {
+        if (_finished || _enumerator is null) return false;
+        try
+        {
+            return ReadNextStep();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ResetRun();
+            StatusMessage = "Ошибка временного файла сортировки: " + ex.Message;
+            return false;
+        }
+    }
+
+    private bool ReadNextStep()
+    {
+        if (_enumerator!.MoveNext())
         {
             _currentStepNo++;
             ApplyStep(_enumerator.Current);
+            return true;
         }
-        else
-        {
-            _finished = true;
-            Finish();
-        }
+        _enumerator.Dispose();
+        _enumerator = null;
+        _finished = true;
+        _engine.Resume();
+        Finish();
+        return false;
     }
 
     private async Task PlayLoopAsync(CancellationToken ct)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
-            // Кадровый показ при нулевой задержке: шаги копятся в фоне, UI обновляется
-            // не чаще ~25 кадров/с — иначе интерфейс «не отвечает».
-            ExternalSortStep? last = null;
-            int steps = 0, cmp = 0, mov = 0;
-            while (_enumerator is not null && _enumerator.MoveNext())
-            {
-                _currentStepNo++;
-                var step = _enumerator.Current;
-                last = step;
-                steps++;
-                switch (step.Op)
-                {
-                    case SortOpType.Compare: cmp++; break;
-                    case SortOpType.Assign: mov++; break;
-                }
-                if (_engine.DelayMs <= 0 && sw.ElapsedMilliseconds < 40 && steps < 5000) continue;
-
-                var s = last;
-                int st = steps, c = cmp, m = mov;
-                last = null;
-                steps = cmp = mov = 0;
-                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyFrame(s!, st, c, m); return (object?)null; });
-                sw.Restart();
-                await _engine.WaitAsync(ct);
-            }
-            if (last is not null)
-            {
-                var s = last;
-                int st = steps, c = cmp, m = mov;
-                await Dispatcher.UIThread.InvokeAsync<object?>(() => { ApplyFrame(s!, st, c, m); return (object?)null; });
-            }
-            await Dispatcher.UIThread.InvokeAsync<object?>(() =>
-            {
-                _finished = true;
-                Finish();
-                return (object?)null;
-            });
+            await _engine.PlayAsync(Advance, ct);
         }
-        catch (OperationCanceledException)
-        {
-            // Нормальная отмена.
-        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
     }
 
     private void Finish()
@@ -447,9 +424,8 @@ public partial class Task2ViewModel : ObservableObject
         IsPaused = false;
         OnPropertyChanged(nameof(CanPause));
         NotifyCanStart();
-        if (_comparer is not null && _workingRows is not null)
+        if (_comparer is not null && _sortedRows is { } rows)
         {
-            var rows = _workingRows.OrderBy(r => r, _comparer).ToList();
             var result = new CsvTable { Headers = Table!.Headers, Separator = Table.Separator };
             foreach (var r in rows) result.Rows.Add(r);
             ResultTable = result;
@@ -462,10 +438,10 @@ public partial class Task2ViewModel : ObservableObject
     /// <summary>Сохранить результат в выбранный файл.</summary>
     public async Task SaveResultAsync(string path)
     {
-        if (ResultTable is null) return;
+        if (ResultTable is not { } result) return;
         try
         {
-            await Task.Run(() => _csv.Save(path, ResultTable, ResultTable.Rows));
+            await Task.Run(() => _csv.Save(path, result, result.Rows));
             StatusMessage = "Результат сохранён: " + path;
             ResultInfo = $"Сохранено: {System.IO.Path.GetFileName(path)}";
         }
@@ -475,14 +451,14 @@ public partial class Task2ViewModel : ObservableObject
         }
     }
 
-    /// <summary>Показать кадр: состояние последнего шага + счётчики по всем шагам кадра.</summary>
-    private void ApplyFrame(ExternalSortStep step, int steps, int cmp, int mov)
+    private void ApplyStep(ExternalSortStep step)
     {
+        if (step.Result is not null) _sortedRows = step.Result;
         Tapes = CompactTapes(step.Tapes);
         PhaseText = step.Phase;
         Explanation = step.Explanation;
-        Comparisons += cmp;
-        Moves += mov;
+        if (step.Op == SortOpType.Compare) Comparisons++;
+        if (step.Op is SortOpType.Assign or SortOpType.Swap) Moves++;
         Log.Add(new LogEntry
         {
             Step = _currentStepNo,
@@ -494,16 +470,9 @@ public partial class Task2ViewModel : ObservableObject
             },
             Indices = step.LogIndices,
             Values = step.LogValues,
-            Explanation = steps > 1
-                ? $"{step.Explanation} (итог {steps} шагов, остальные — в счётчиках)"
-                : step.Explanation,
+            Explanation = step.Explanation,
         });
     }
-
-    private void ApplyStep(ExternalSortStep step) =>
-        ApplyFrame(step, 1,
-            cmp: step.Op == SortOpType.Compare ? 1 : 0,
-            mov: step.Op == SortOpType.Assign ? 1 : 0);
 
     // ---------- Ограничение визуализации лент ----------
 
