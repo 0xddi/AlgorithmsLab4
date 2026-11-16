@@ -209,6 +209,7 @@ public partial class Task3ViewModel : ObservableObject
         _engine.Reset();
         _enumerator?.Dispose();
         _enumerator = null;
+        _pendingVisual = null;
         _currentStepNo = 0;
         _finished = false;
         Comparisons = 0;
@@ -235,7 +236,7 @@ public partial class Task3ViewModel : ObservableObject
         _engine.Reset();
         _engine.DelayMs = (int)Math.Clamp(DelayMs, 0, 2000);
         _cts = new CancellationTokenSource();
-        _enumerator ??= SelectedAlgorithm.Algo.GetSteps(_words, snapshots: _words.Length <= VisualCap).GetEnumerator();
+        _enumerator ??= SelectedAlgorithm.Algo.GetSteps(_words, snapshots: false).GetEnumerator();
         IsPaused = false;
         IsPlaying = true;
         OnPropertyChanged(nameof(CanPause));
@@ -271,7 +272,7 @@ public partial class Task3ViewModel : ObservableObject
         if (IsPlaying) return;
         if (_finished) ResetRun();
         if (_enumerator is null && _words.Length > 0)
-            _enumerator ??= SelectedAlgorithm.Algo.GetSteps(_words, snapshots: _words.Length <= VisualCap).GetEnumerator();
+            _enumerator ??= SelectedAlgorithm.Algo.GetSteps(_words, snapshots: false).GetEnumerator();
         if (_enumerator is null) return;
         Advance();
     }
@@ -310,16 +311,27 @@ public partial class Task3ViewModel : ObservableObject
     {
         try
         {
-            await _engine.PlayAsync(Advance, ct);
+            await _engine.PlayAsync(Advance, ct, PublishVisual);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+    }
+
+    // При быстром прогоне журнал получает каждую операцию, а сцена — последний шаг кадра.
+    private StringSortStep? _pendingVisual;
+
+    private void PublishVisual()
+    {
+        if (_pendingVisual is not { } step) return;
+        _pendingVisual = null;
+        if (_words.Length <= VisualCap)
+            Chips = step.Values.Zip(step.Marks, (v, m) => new WordChipVm { Text = v, Mark = m }).ToList();
     }
 
     private void ApplyStep(StringSortStep step)
     {
         _sortedWords = step.Values;
-        if (_words.Length <= VisualCap)
-            Chips = step.Values.Zip(step.Marks, (v, m) => new WordChipVm { Text = v, Mark = m }).ToList();
+        _pendingVisual = step;
+        if (!IsPlaying) PublishVisual();
         Explanation = step.Explanation;
         if (step.Op == SortOpType.Compare) Comparisons++;
         if (step.Op is SortOpType.Assign or SortOpType.Swap) Moves++;

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
@@ -62,6 +63,90 @@ public class SortVisualizer : Control
     public IBrush? PivotBrush { get => GetValue(PivotBrushProperty); set => SetValue(PivotBrushProperty, value); }
     public IBrush? LabelBrush { get => GetValue(LabelBrushProperty); set => SetValue(LabelBrushProperty, value); }
 
+    public static readonly StyledProperty<double> DelayMsProperty =
+        AvaloniaProperty.Register<SortVisualizer, double>(nameof(DelayMs), 150);
+    public double DelayMs { get => GetValue(DelayMsProperty); set => SetValue(DelayMsProperty, value); }
+
+    private readonly Dictionary<int, FormattedText> _labels = new();
+    private static readonly Typeface LabelTypeface = new("Inter, Segoe UI");
+    private double _labelSize;
+    private double[] _fromSlot = [];
+    private double[] _fromValue = [];
+    private long _started;
+    private double _duration;
+    private bool _frameRequested;
+
+    private double Progress()
+    {
+        if (_duration <= 0) return 1;
+        double t = Math.Min(1, Stopwatch.GetElapsedTime(_started).TotalMilliseconds / _duration);
+        return t * t * (3 - 2 * t);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == LabelBrushProperty) _labels.Clear();
+        if (change.Property == DelayMsProperty && DelayMs <= 0)
+        {
+            _duration = 0;
+            InvalidateVisual();
+        }
+        if (change.Property == BarsProperty)
+            BeginMove(change.GetOldValue<IReadOnlyList<SortBar>?>(), Bars);
+    }
+
+    private void BeginMove(IReadOnlyList<SortBar>? previous, IReadOnlyList<SortBar>? next)
+    {
+        if (previous is null || next is null || previous.Count != next.Count || DelayMs <= 0)
+        {
+            _duration = 0;
+            return;
+        }
+
+        int first = -1, second = -1, changes = 0;
+        for (int i = 0; i < next.Count; i++)
+        {
+            if (previous[i].Value == next[i].Value) continue;
+            if (changes == 0) first = i;
+            if (changes == 1) second = i;
+            changes++;
+        }
+        if (changes == 0) return; // Изменение подсветки не прерывает перемещение.
+        bool swap = changes == 2 && previous[first].Value == next[second].Value
+                                && previous[second].Value == next[first].Value;
+        double t = Progress();
+        if (_fromSlot.Length != next.Count)
+        {
+            _fromSlot = new double[next.Count];
+            _fromValue = new double[next.Count];
+            t = 1;
+        }
+        for (int i = 0; i < next.Count; i++)
+        {
+            _fromSlot[i] += (i - _fromSlot[i]) * t;
+            _fromValue[i] += (previous[i].Value - _fromValue[i]) * t;
+        }
+        if (swap)
+        {
+            (_fromSlot[first], _fromSlot[second]) = (_fromSlot[second], _fromSlot[first]);
+            (_fromValue[first], _fromValue[second]) = (_fromValue[second], _fromValue[first]);
+        }
+        _duration = Math.Min(170, DelayMs);
+        _started = Stopwatch.GetTimestamp();
+    }
+
+    private void RequestNextFrame()
+    {
+        if (_frameRequested || TopLevel.GetTopLevel(this) is not { } window) return;
+        _frameRequested = true;
+        window.RequestAnimationFrame(_ =>
+        {
+            _frameRequested = false;
+            InvalidateVisual();
+        });
+    }
+
     public override void Render(DrawingContext context)
     {
         var bars = Bars;
@@ -79,31 +164,48 @@ public class SortVisualizer : Control
         double barW = (bounds.Width - (n - 1) * gap) / n;
         if (barW <= 0) return;
 
-        int max = 1;
-        foreach (var b in bars) max = Math.Max(max, b.Value);
+        double t = Progress();
+        double max = 1;
+        for (int i = 0; i < n; i++)
+        {
+            double value = t >= 1 ? bars[i].Value : _fromValue[i] + (bars[i].Value - _fromValue[i]) * t;
+            max = Math.Max(max, value);
+        }
         double plotHeight = Math.Max(1, bounds.Height - topPad - bottomPad - labelSpace);
 
-        var typeface = new Typeface("Inter, Segoe UI");
         double fontSize = Math.Clamp(barW * 0.6, 7, 12);
 
+        if (fontSize != _labelSize)
+        {
+            _labelSize = fontSize;
+            _labels.Clear();
+        }
         for (int i = 0; i < n; i++)
         {
             var bar = bars[i];
-            double x = i * (barW + gap);
-            double h = Math.Max(2, (double)bar.Value / max * plotHeight);
+            double slot = t >= 1 ? i : _fromSlot[i] + (i - _fromSlot[i]) * t;
+            double value = t >= 1 ? bar.Value : _fromValue[i] + (bar.Value - _fromValue[i]) * t;
+            double x = slot * (barW + gap);
+            double h = Math.Max(2, value / max * plotHeight);
             double y = topPad + plotHeight - h;
             var rect = new RoundedRect(new Rect(x, y, barW, h), Math.Min(3, barW / 2));
             context.DrawRectangle(BrushFor(bar.Mark), null, rect);
 
             if (ShowLabels && barW >= 9)
             {
-                var ft = new FormattedText(bar.Value.ToString(),
-                    CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-                    typeface, fontSize, LabelBrush ?? Brushes.Gray);
+                if (!_labels.TryGetValue(bar.Value, out var ft))
+                {
+                    ft = new FormattedText(bar.Value.ToString(), CultureInfo.InvariantCulture,
+                        FlowDirection.LeftToRight, LabelTypeface, fontSize, LabelBrush ?? Brushes.Gray);
+                    _labels.Add(bar.Value, ft);
+                }
+                if (ft.Width > barW + gap) continue;
                 double tx = x + (barW - ft.Width) / 2;
                 context.DrawText(ft, new Point(tx, topPad + plotHeight + 2));
             }
         }
+
+        if (t < 1) RequestNextFrame();
 
         // Базовая линия под столбиками.
         var pen = new Pen(LabelBrush ?? Brushes.Gray, 1, null, PenLineCap.Round);

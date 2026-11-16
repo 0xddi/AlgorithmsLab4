@@ -6,10 +6,22 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1250" d:DesignHeight="720">
 
-  <Grid RowDefinitions="*,Auto,290" RowSpacing="8">
+  <Grid RowSpacing="8">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="3*" MinHeight="210" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="2*" MinHeight="185" />
+    </Grid.RowDefinitions>
 
     <!-- ВЕРХНАЯ ЧАСТЬ -->
-    <Grid Grid.Row="0" ColumnDefinitions="320,Auto,*,Auto,450">
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="25*" MinWidth="240" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="41*" MinWidth="260" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="34*" MinWidth="300" />
+      </Grid.ColumnDefinitions>
 
       <!-- ЛЕВАЯ ПАНЕЛЬ -->
       <Border Grid.Column="0" Classes="card">
@@ -28,11 +40,11 @@
 
             <Separator Margin="0,2,0,0" />
             <TextBlock Text="Сгенерировать тестовый текст" Classes="subtle" />
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <WrapPanel>
               <NumericUpDown Minimum="50" Maximum="20000" Increment="50" Value="{Binding GenerateCount}" Width="120" />
               <TextBlock Text="слов" VerticalAlignment="Center" />
-              <Button Content="Сгенерировать" Command="{Binding GenerateTextCommand}" />
-            </StackPanel>
+              <Button Content="Сгенерировать" Command="{Binding GenerateTextCommand}" Margin="6,0,0,0" />
+            </WrapPanel>
 
             <Separator Margin="0,2,0,0" />
             <TextBlock Text="Алгоритм сортировки слов" Classes="subtle" />
@@ -54,7 +66,7 @@
                       Command="{Binding ContinueCommand}" IsEnabled="{Binding IsPaused}" />
               <Button Grid.Row="1" Grid.Column="1" Content="Шаг" HorizontalContentAlignment="Center"
                       Command="{Binding StepCommand}" IsEnabled="{Binding CanStep}" />
-              <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Сброс" Classes="danger" HorizontalContentAlignment="Center"
+              <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Сброс" HorizontalContentAlignment="Center"
                       Command="{Binding ResetCommand}" />
             </Grid>
 
@@ -74,11 +86,11 @@
       <GridSplitter Grid.Column="1" Width="6" Background="Transparent" HorizontalAlignment="Stretch" />
 
       <!-- ЦЕНТР: слова + частоты + пояснение -->
-      <Grid Grid.Column="2" RowDefinitions="*,Auto,Auto,Auto" RowSpacing="6" Margin="8,0,8,0">
+      <Grid Grid.Column="2" RowDefinitions="3*,Auto,Auto,2*" RowSpacing="6" Margin="8,0,8,0">
         <Border Grid.Row="0" Classes="card accentTop">
           <DockPanel>
             <TextBlock DockPanel.Dock="Top" Text="Визуализация слов" Classes="h2" Margin="0,0,0,6" />
-            <controls:WordSortVisualizer Words="{Binding Chips}" Message="{Binding VisualMessage}"
+            <controls:WordSortVisualizer DelayMs="{Binding DelayMs}" Words="{Binding Chips}" Message="{Binding VisualMessage}"
                                          ChipBrush="{DynamicResource ChipBgBrush}"
                                          TextBrush="{Binding Settings.LabelBrush}"
                                          CompareBrush="{DynamicResource HighlightBrush}"
@@ -109,7 +121,9 @@
         <Border Grid.Row="0" Classes="card" Padding="12,8">
           <StackPanel Spacing="2">
             <TextBlock Text="Объяснение простыми словами" Classes="h2" />
+            <ScrollViewer Height="50" HorizontalScrollBarVisibility="Disabled">
             <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" MinHeight="30" />
+          </ScrollViewer>
           </StackPanel>
         </Border>
         <Border Grid.Row="1" Classes="card">
@@ -123,12 +137,13 @@
     <!-- НИЗ: эксперименты -->
     <Border Grid.Row="2" Classes="card">
       <Grid ColumnDefinitions="200,*,*" ColumnSpacing="12">
-        <StackPanel Grid.Column="0" Spacing="8">
+        <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="8">
           <TextBlock Text="Эксперименты" Classes="h2" />
           <TextBlock Text="{Binding BenchLengthsText}" Classes="subtle" TextWrapping="Wrap" />
           <NumericUpDown Minimum="50" Maximum="50000" Increment="50" Value="{Binding CustomBenchLength}"
                          HorizontalAlignment="Stretch" />
-          <Grid ColumnDefinitions="*,*,6">
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="5">
             <Button Grid.Column="0" Content="Добавить" Command="{Binding AddBenchLengthCommand}"
                     HorizontalContentAlignment="Center" />
             <Button Grid.Column="1" Content="Сбросить" Command="{Binding ResetBenchLengthsCommand}"
@@ -141,7 +156,8 @@
           <Button Content="Отменить" Command="{Binding CancelBenchmarkCommand}" IsEnabled="{Binding BenchRunning}" />
           <ProgressBar Value="{Binding BenchProgress}" Maximum="100" Height="10" />
           <TextBlock Text="{Binding BenchStatus}" Classes="subtle" TextWrapping="Wrap" />
-        </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
 
         <Border Grid.Column="1" Background="{DynamicResource PanelBgBrush}" CornerRadius="8" Padding="4">
           <DataGrid Classes="compact" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False"
@@ -150,7 +166,7 @@
             <DataGrid.Columns>
               <DataGridTextColumn Header="Длина" Binding="{Binding Length}" Width="52"
                                   HeaderTemplate="{StaticResource GridHeaderTemplate}" />
-              <DataGridTextColumn Header="Алгоритм" Binding="{Binding Algorithm}" Width="*"
+              <DataGridTextColumn Header="Алгоритм" Binding="{Binding Algorithm}" Width="*" MinWidth="112"
                                   HeaderTemplate="{StaticResource GridHeaderTemplate}" />
               <DataGridTextColumn Header="Время, мс" Binding="{Binding AvgMs, StringFormat=F2}" Width="84"
                                   HeaderTemplate="{StaticResource GridHeaderTemplate}" />

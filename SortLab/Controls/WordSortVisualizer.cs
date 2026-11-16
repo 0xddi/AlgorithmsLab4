@@ -72,7 +72,14 @@ public class WordSortVisualizer : Control
     public IBrush? PivotBrush { get => GetValue(PivotBrushProperty); set => SetValue(PivotBrushProperty, value); }
 
     // Состояние анимации: два слота, чипы которых едут навстречу друг другу.
-    private string[]? _prev;
+    public static readonly StyledProperty<double> DelayMsProperty =
+        AvaloniaProperty.Register<WordSortVisualizer, double>(nameof(DelayMs), 150);
+    public double DelayMs { get => GetValue(DelayMsProperty); set => SetValue(DelayMsProperty, value); }
+
+    private Point _fromA, _fromB;
+    private double _duration;
+    private readonly Dictionary<(string Text, IBrush Foreground), FormattedText> _labels = new();
+    private static readonly Typeface LabelTypeface = new("Inter, Segoe UI");
     private int _animA = -1, _animB = -1;
     private double _animT = 1;
     private long _animStart;
@@ -92,7 +99,9 @@ public class WordSortVisualizer : Control
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == WordsProperty) OnWordsChanged();
+        if (change.Property == WordsProperty) OnWordsChanged(change.GetOldValue<IReadOnlyList<WordChipVm>?>());
+        else if (change.Property == TextBrushProperty) _labels.Clear();
+        else if (change.Property == DelayMsProperty && DelayMs <= 0) { StopAnim(); InvalidateVisual(); }
         else if (change.Property == BoundsProperty) InvalidateLayout();
         else if (change.Property == MessageProperty) InvalidateVisual();
     }
@@ -104,25 +113,50 @@ public class WordSortVisualizer : Control
         InvalidateVisual();
     }
 
-    private void OnWordsChanged()
+    private void OnWordsChanged(IReadOnlyList<WordChipVm>? previous)
     {
-        // Завершаем прошлую анимацию: базовые позиции всегда считаются для текущего набора.
-        StopAnim();
-
-        var words = Words;
-        var curr = words is null ? [] : words.Select(w => w.Text).ToArray();
-
-        // Анимируем только чистую перестановку двух позиций (шаг «обмен»).
-        if (_prev is not null && curr.Length == _prev.Length && curr.Length > 0)
+        var next = Words;
+        if (previous is not null && next is not null && previous.Count == next.Count)
         {
-            List<int> diff = [];
-            for (int i = 0; i < curr.Length; i++)
-                if (!string.Equals(curr[i], _prev[i], StringComparison.Ordinal))
-                    diff.Add(i);
-            if (diff.Count == 2) StartAnim(diff[0], diff[1]);
+            int first = -1, second = -1, count = 0;
+            for (int i = 0; i < next.Count; i++)
+            {
+                if (next[i].Text == previous[i].Text) continue;
+                if (++count == 1) first = i;
+                else if (count == 2) second = i;
+                else break;
+            }
+            if (count == 0) return;
+            if (count == 2 && DelayMs > 0 && second < _visibleCount && _layoutCount == next.Count
+                && previous[first].Text == next[second].Text && previous[second].Text == next[first].Text)
+            {
+                var fromA = CurrentPosition(second);
+                var fromB = CurrentPosition(first);
+                _fromA = fromA;
+                _fromB = fromB;
+                StartAnim(first, second);
+                InvalidateLayout();
+                return;
+            }
         }
-        _prev = curr;
+        _labels.Clear();
+        StopAnim();
         InvalidateLayout();
+    }
+
+    private Point CurrentPosition(int index)
+    {
+        var target = new Point(_xs[index], _ys[index]);
+        if (_animT >= 1 || (index != _animA && index != _animB)) return target;
+        var from = index == _animA ? _fromA : _fromB;
+        double t = Ease(_animT);
+        return new Point(Lerp(from.X, target.X, t), Lerp(from.Y, target.Y, t));
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        StopAnim();
+        base.OnDetachedFromVisualTree(e);
     }
 
     private void StopAnim()
@@ -136,6 +170,7 @@ public class WordSortVisualizer : Control
     {
         _animA = a;
         _animB = b;
+        _duration = Math.Min(AnimMs, DelayMs);
         _animT = 0;
         _animStart = Stopwatch.GetTimestamp();
         if (_timer is null)
@@ -147,7 +182,7 @@ public class WordSortVisualizer : Control
 
     private void Tick()
     {
-        _animT = Math.Clamp(Stopwatch.GetElapsedTime(_animStart).TotalMilliseconds / AnimMs, 0, 1);
+        _animT = Math.Clamp(Stopwatch.GetElapsedTime(_animStart).TotalMilliseconds / _duration, 0, 1);
         InvalidateVisual();
         if (_animT >= 1) _timer?.Stop();
     }
@@ -166,23 +201,9 @@ public class WordSortVisualizer : Control
         }
 
         EnsureLayout(bounds);
-        var typeface = new Typeface("Inter, Segoe UI");
-        double t = Ease(_animT);
-
         for (int i = 0; i < _visibleCount; i++)
         {
-            double x = _xs[i], y = _ys[i];
-            if (_animT < 1 && (i == _animA || i == _animB))
-            {
-                int other = i == _animA ? _animB : _animA;
-                if (other >= 0 && other < _visibleCount)
-                {
-                    // Чип, попавший в слот i, выехал из слота other: интерполируем между позициями.
-                    x = Lerp(_xs[other], x, t);
-                    y = Lerp(_ys[other], y, t);
-                }
-            }
-
+            var (x, y) = CurrentPosition(i);
             var chip = words[i];
             var rect = new RoundedRect(new Rect(x, y, _widths[i], _chipH), Math.Min(5, _chipH / 2));
             context.DrawRectangle(BrushFor(chip.Mark), null, rect);
@@ -193,18 +214,29 @@ public class WordSortVisualizer : Control
                 StepMark.Swap or StepMark.Pivot => Brushes.White,
                 _ => TextBrush ?? Brushes.Gray,
             };
-            var ft = new FormattedText(chip.Text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-                typeface, _fontSize, fg);
+            var ft = Label(chip.Text, fg);
             context.DrawText(ft, new Point(x + PadX, y + (_chipH - ft.Height) / 2));
         }
 
         if (_hiddenCount > 0)
         {
             var ft = new FormattedText($"… и ещё {_hiddenCount} слов — не хватает места",
-                CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, 11,
+                CultureInfo.InvariantCulture, FlowDirection.LeftToRight, LabelTypeface, 11,
                 TextBrush ?? Brushes.Gray);
             context.DrawText(ft, new Point(4, bounds.Height - ft.Height - 2));
         }
+    }
+
+    private FormattedText Label(string text, IBrush foreground)
+    {
+        var key = (text, foreground);
+        if (!_labels.TryGetValue(key, out var label))
+        {
+            label = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                LabelTypeface, _fontSize, foreground);
+            _labels.Add(key, label);
+        }
+        return label;
     }
 
     private IBrush BrushFor(StepMark mark) => mark switch
@@ -239,30 +271,28 @@ public class WordSortVisualizer : Control
         _layoutCount = words.Count;
         LogLayout($"EnsureLayout w={bounds.Width:F0} h={bounds.Height:F0} n={words.Count}");
 
-        var typeface = new Typeface("Inter, Segoe UI");
         double availW = Math.Max(40, bounds.Width);
 
         // Размер шрифта подбираем по числу слов, раскладку делаем один раз:
         // перенос по строкам, а если по высоте не влезает — показываем сколько поместилось.
         _fontSize = words.Count <= 60 ? 12 : words.Count <= 150 ? 11 : words.Count <= 220 ? 10 : 9;
-        TryLayout(words, typeface, _fontSize, availW, bounds.Height);
+        TryLayout(words, availW, bounds.Height);
         // Если есть скрытые слова — резервируем снизу место под подпись «… и ещё N слов»
         // и пересчитываем раскладку, чтобы подпись не наезжала на чипы.
         if (_hiddenCount > 0)
-            TryLayout(words, typeface, _fontSize, availW, bounds.Height - FooterReserve);
+            TryLayout(words, availW, bounds.Height - FooterReserve);
         LogLayout($"  font={_fontSize} visible={_visibleCount} hidden={_hiddenCount}");
     }
 
     /// <summary>Раскладка «чипов» по строкам; рисуем только те, что влезли по высоте.</summary>
-    private bool TryLayout(IReadOnlyList<WordChipVm> words, Typeface typeface, double fontSize,
+    private void TryLayout(IReadOnlyList<WordChipVm> words,
         double availW, double availH)
     {
         _widths.Clear();
         double chipH = 0;
         foreach (var w in words)
         {
-            var ft = new FormattedText(w.Text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-                typeface, fontSize, Brushes.Black);
+            var ft = Label(w.Text, TextBrush ?? Brushes.Gray);
             _widths.Add(ft.Width + PadX * 2);
             chipH = Math.Max(chipH, ft.Height + PadY * 2);
         }
@@ -291,7 +321,6 @@ public class WordSortVisualizer : Control
 
         _visibleCount = visible;
         _hiddenCount = words.Count - visible;
-        return true;
     }
 
     private static double Lerp(double a, double b, double t) => a + (b - a) * t;

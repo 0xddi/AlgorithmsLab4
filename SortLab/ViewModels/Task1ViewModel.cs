@@ -241,6 +241,7 @@ public partial class Task1ViewModel : ObservableObject
         _engine.Reset();
         _enumerator?.Dispose();
         _enumerator = null;
+        _pendingVisual = null;
         _currentStepNo = 0;
         _finished = false;
         Comparisons = 0;
@@ -256,14 +257,25 @@ public partial class Task1ViewModel : ObservableObject
     {
         try
         {
-            await _engine.PlayAsync(Advance, ct);
+            await _engine.PlayAsync(Advance, ct, PublishVisual);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
     }
 
+    // При быстром прогоне журнал получает каждую операцию, а сцена — последний шаг кадра.
+    private SortStep? _pendingVisual;
+
+    private void PublishVisual()
+    {
+        if (_pendingVisual is not { } step) return;
+        _pendingVisual = null;
+        Bars = step.Marks.Zip(step.Values, (m, v) => new SortBar(v, m)).ToList();
+    }
+
     private void ApplyStep(SortStep step)
     {
-        Bars = step.Marks.Zip(step.Values, (m, v) => new SortBar(v, m)).ToList();
+        _pendingVisual = step;
+        if (!IsPlaying) PublishVisual();
         Explanation = step.Explanation;
         if (step.Op == SortOpType.Compare) Comparisons++;
         if (step.Op == SortOpType.Swap) Swaps++;

@@ -135,7 +135,7 @@ public class BarChart : Control
             context.DrawText(catFt, new Point(gx + (groupW - catFt.Width) / 2, top + plotH + 6));
         }
 
-        DrawLegend(context, series, typeface, labelBrush);
+        DrawLegend(context, series, typeface, labelBrush, BarBrush);
 
         // Подписи осей с единицами измерения.
         if (!string.IsNullOrWhiteSpace(yTitle))
@@ -165,13 +165,13 @@ public class BarChart : Control
     };
 
     internal static void DrawLegend(DrawingContext context, IReadOnlyList<ChartSeriesData> series,
-        Typeface typeface, IBrush labelBrush, Func<int, IBrush>? brushFor = null)
+        Typeface typeface, IBrush labelBrush, Func<int, IBrush> brushFor)
     {
         double x = 8;
         const double y = 6;
         for (int s = 0; s < Math.Min(4, series.Count); s++)
         {
-            var swatchBrush = brushFor?.Invoke(s) ?? Brushes.SteelBlue;
+            var swatchBrush = brushFor(s);
             context.FillRectangle(swatchBrush, new Rect(x, y + 3, 10, 10));
             var ft = new FormattedText(series[s].Name, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
                 typeface, 11, labelBrush);

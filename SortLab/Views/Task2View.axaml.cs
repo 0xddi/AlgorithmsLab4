@@ -40,7 +40,8 @@ public partial class Task2View : UserControl
                     Header = h,
                     HeaderTemplate = (Avalonia.Controls.Templates.IDataTemplate?)headerTemplate,
                     Binding = new Avalonia.Data.Binding($"[{i}]"),
-                    Width = new DataGridLength(110, DataGridLengthUnitType.Pixel),
+                    MinWidth = 108,
+                    Width = new DataGridLength(1, DataGridLengthUnitType.Star),
                 };
                 grid.Columns.Add(col);
                 i++;

@@ -6,7 +6,14 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1250" d:DesignHeight="720">
 
-  <Grid ColumnDefinitions="320,Auto,*,Auto,450">
+  <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="25*" MinWidth="240" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="41*" MinWidth="260" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="34*" MinWidth="300" />
+      </Grid.ColumnDefinitions>
 
     <!-- ЛЕВАЯ ПАНЕЛЬ -->
     <Border Grid.Column="0" Classes="card">
@@ -71,7 +78,7 @@
                     Command="{Binding ContinueCommand}" IsEnabled="{Binding IsPaused}" />
             <Button Grid.Row="1" Grid.Column="1" Content="Шаг" HorizontalContentAlignment="Center"
                     Command="{Binding StepCommand}" IsEnabled="{Binding CanStep}" />
-            <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Сброс" Classes="danger" HorizontalContentAlignment="Center"
+            <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Сброс" HorizontalContentAlignment="Center"
                     Command="{Binding ResetCommand}" />
           </Grid>
 
@@ -166,7 +173,9 @@
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Margin="8,8,8,4">
             <TextBlock Text="Результат (отсортировано)" Classes="h2" />
+            <ScrollViewer Height="44" HorizontalScrollBarVisibility="Disabled">
             <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" Classes="subtle" Margin="0,2,0,4" />
+          </ScrollViewer>
           </StackPanel>
           <DataGrid x:Name="ResultGrid" AutoGenerateColumns="False" IsReadOnly="True"
                     CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
