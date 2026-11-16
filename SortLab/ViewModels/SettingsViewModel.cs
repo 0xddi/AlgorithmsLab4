@@ -17,7 +17,11 @@ public partial class SettingsViewModel : ObservableObject
     private bool _darkTheme;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NavigationWidth), nameof(CaptionSize))]
     private double _fontSize = 14;
+
+    public double NavigationWidth => Math.Max(178, 64 + 9 * FontSize);
+    public double CaptionSize => Math.Max(12, FontSize * 0.85);
 
     [ObservableProperty]
     private int _colorSchemeIndex;
@@ -76,7 +80,7 @@ public partial class SettingsViewModel : ObservableObject
         (string n, string c, string s, string so, string p, string l, string g) palette = (ColorSchemeIndex, DarkTheme) switch
         {
             (0, false) => ("#91B9AF", "#A34424", "#CE8153", "#08645E", "#746398", "#314D4E", "#D4DEDC"),
-            (0, true) => ("#7C93FF", "#FFC53D", "#FF7070", "#66BB6A", "#CE93D8", "#AAB3C6", "#39435A"),
+            (0, true) => ("#80B6AA", "#FFB486", "#F18E75", "#75DEC3", "#D5ACE8", "#D6E6E3", "#455C59"),
             (1, false) => ("#00A8CC", "#FF8F00", "#E53935", "#7CB342", "#D81B60", "#5A6478", "#D5DBE8"),
             (1, true) => ("#22D3EE", "#FFD54F", "#FF5252", "#9CCC65", "#F06292", "#AAB3C6", "#39435A"),
             (2, false) => ("#94B3E8", "#F5D76E", "#F0A3A3", "#A8D8A8", "#C9A7D8", "#5A6478", "#D5DBE8"),

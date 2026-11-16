@@ -4,7 +4,11 @@
       <TextBlock Classes="h1" Text="Внешняя сортировка" TextWrapping="Wrap"/>
       <TextBlock Classes="subtle" Text="Сравнивайте записи по выбранному столбцу и следите за слиянием серий." TextWrapping="Wrap"/>
     </StackPanel>
-    <Grid Grid.Row="1" ColumnDefinitions="*,270" ColumnSpacing="14">
+    <Grid Grid.Row="1" ColumnSpacing="14">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="0.44*" MinWidth="270" MaxWidth="440"/>
+      </Grid.ColumnDefinitions>
       <Border Classes="card">
         <Grid RowDefinitions="*,Auto,Auto" RowSpacing="10">
           <TabControl>
@@ -82,7 +86,7 @@
         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="8">
             <TextBlock Classes="h2" Text="Параметры" TextWrapping="Wrap"/>
-            <Button Content="Загрузить CSV-файл..." Classes="accent" Click="OnBrowse" HorizontalAlignment="Stretch"/>
+            <Button Content="Открыть CSV…" Classes="primary" Click="OnBrowse" HorizontalAlignment="Stretch"/>
             <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextWrapping="Wrap"/>
             <TextBlock Text="Метод внешней сортировки" Classes="subtle" Margin="0,4,0,0"/>
             <ComboBox ItemsSource="{Binding SorterNames}" SelectedIndex="{Binding SelectedSorterIndex}" HorizontalAlignment="Stretch"/>
@@ -94,15 +98,17 @@
             <ComboBox ItemsSource="{Binding Table.Headers}" SelectedItem="{Binding SelectedKeyColumn}" HorizontalAlignment="Stretch"/>
             <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}"/>
             <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle"/>
-            <Button Content="Сохранить результат..." Click="OnSaveResult" HorizontalAlignment="Stretch" IsEnabled="{Binding HasResult}"/>
-            <Expander Header="Примеры таблиц" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+            <Button Content="Сохранить CSV…" Click="OnSaveResult" HorizontalAlignment="Stretch" IsEnabled="{Binding HasResult}"/>
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+              <Expander.Header><TextBlock Text="Примеры таблиц" TextWrapping="Wrap"/></Expander.Header>
               <StackPanel Spacing="8">
                 <TextBlock Text="Примеры таблиц из задания" Classes="subtle" Margin="0,4,0,0"/>
                 <ComboBox ItemsSource="{Binding SampleNames}" SelectedIndex="{Binding SelectedSampleIndex}" HorizontalAlignment="Stretch"/>
                 <Button Content="Загрузить пример" Command="{Binding LoadSampleCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
               </StackPanel>
             </Expander>
-            <Expander Header="Формат и отбор строк" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+              <Expander.Header><TextBlock Text="Формат и отбор строк" TextWrapping="Wrap"/></Expander.Header>
               <StackPanel Spacing="8">
                 <TextBlock Text="Разделитель" Classes="subtle" Margin="0,4,0,0"/>
                 <ComboBox SelectedIndex="{Binding SelectedSeparatorIndex}" HorizontalAlignment="Stretch">
@@ -123,7 +129,8 @@
                 <TextBox Watermark="Значение фильтра, напр. Европа" Text="{Binding FilterValue}"/>
               </StackPanel>
             </Expander>
-            <Expander Header="Сведения о файле" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+              <Expander.Header><TextBlock Text="Сведения о файле" TextWrapping="Wrap"/></Expander.Header>
               <StackPanel Spacing="8">
                 <TextBlock Text="{Binding SourcePath}" Classes="subtle" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding SeparatorInfo}" Classes="subtle" TextWrapping="Wrap"/>

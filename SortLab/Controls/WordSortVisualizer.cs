@@ -88,7 +88,11 @@ public class WordSortVisualizer : Control
     // Кэш раскладки.
     private double _layoutW = -1, _layoutH = -1;
     private int _layoutCount = -1;
-    private double _fontSize = 12;
+    public static readonly StyledProperty<double> LabelSizeProperty =
+        AvaloniaProperty.Register<WordSortVisualizer, double>(nameof(LabelSize), 14);
+    public double LabelSize { get => GetValue(LabelSizeProperty); set => SetValue(LabelSizeProperty, value); }
+
+    private double _fontSize = 14;
     private double _chipH = 20;
     private readonly List<double> _widths = new();
     private readonly List<double> _xs = new();
@@ -102,6 +106,7 @@ public class WordSortVisualizer : Control
         if (change.Property == WordsProperty) OnWordsChanged(change.GetOldValue<IReadOnlyList<WordChipVm>?>());
         else if (change.Property == TextBrushProperty) _labels.Clear();
         else if (change.Property == DelayMsProperty && DelayMs <= 0) { StopAnim(); InvalidateVisual(); }
+        else if (change.Property == LabelSizeProperty) { _labels.Clear(); InvalidateLayout(); }
         else if (change.Property == BoundsProperty) InvalidateLayout();
         else if (change.Property == MessageProperty) InvalidateVisual();
     }
@@ -275,7 +280,7 @@ public class WordSortVisualizer : Control
 
         // Размер шрифта подбираем по числу слов, раскладку делаем один раз:
         // перенос по строкам, а если по высоте не влезает — показываем сколько поместилось.
-        _fontSize = words.Count <= 60 ? 12 : words.Count <= 150 ? 11 : words.Count <= 220 ? 10 : 9;
+        _fontSize = LabelSize;
         TryLayout(words, availW, bounds.Height);
         // Если есть скрытые слова — резервируем снизу место под подпись «… и ещё N слов»
         // и пересчитываем раскладку, чтобы подпись не наезжала на чипы.

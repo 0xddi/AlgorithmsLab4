@@ -4,7 +4,11 @@
       <TextBlock Classes="h1" Text="Внутренняя сортировка" TextWrapping="Wrap"/>
       <TextBlock Classes="subtle" Text="Проследите, как меняется порядок чисел в массиве." TextWrapping="Wrap"/>
     </StackPanel>
-    <Grid Grid.Row="1" ColumnDefinitions="*,270" ColumnSpacing="14">
+    <Grid Grid.Row="1" ColumnSpacing="14">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="0.44*" MinWidth="270" MaxWidth="440"/>
+      </Grid.ColumnDefinitions>
       <Border Classes="card">
         <Grid RowDefinitions="*,Auto,Auto" RowSpacing="10">
           <DockPanel>
@@ -54,7 +58,7 @@
             <ComboBox ItemsSource="{Binding Algorithms}" SelectedItem="{Binding SelectedAlgorithm}" HorizontalAlignment="Stretch">
               <ComboBox.ItemTemplate>
                 <DataTemplate>
-                  <TextBlock Text="{Binding Name}"/>
+                  <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
@@ -64,14 +68,16 @@
             <TextBlock Text="{Binding InputError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding InputError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}" TickFrequency="100" IsSnapToTickEnabled="False"/>
             <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle"/>
-            <Expander Header="Генерация массива" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+              <Expander.Header><TextBlock Text="Генерация массива" TextWrapping="Wrap"/></Expander.Header>
               <StackPanel Spacing="8">
                 <TextBlock Text="Размер массива (5–100)" Classes="subtle" Margin="0,6,0,0"/>
                 <NumericUpDown Minimum="5" Maximum="100" Increment="1" Value="{Binding ArraySize}"/>
-                <Button Content="Новый массив" Classes="accent" Command="{Binding GenerateArrayCommand}" HorizontalAlignment="Stretch"/>
+                <Button Content="Новый массив" Classes="primary" Command="{Binding GenerateArrayCommand}" HorizontalAlignment="Stretch"/>
               </StackPanel>
             </Expander>
-            <Expander Header="Об алгоритме и статистика" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+              <Expander.Header><TextBlock Text="Описание и статистика" TextWrapping="Wrap"/></Expander.Header>
               <StackPanel Spacing="8">
                 <TextBlock Text="{Binding AlgorithmDescription}" TextWrapping="Wrap" Classes="subtle"/>
                 <StackPanel Spacing="3">

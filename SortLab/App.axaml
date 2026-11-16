@@ -9,6 +9,9 @@
       <ResourceDictionary.ThemeDictionaries>
 
         <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="NavigationBrush">#163B3B</SolidColorBrush>
+          <SolidColorBrush x:Key="NavigationSelectionBrush">#D4EDDF</SolidColorBrush>
+          <SolidColorBrush x:Key="NavigationSelectionTextBrush">#163B3B</SolidColorBrush>
           <SolidColorBrush x:Key="NoteBrush">#DEF2ED</SolidColorBrush>
           <SolidColorBrush x:Key="WindowBgBrush">#F4F6F3</SolidColorBrush>
           <SolidColorBrush x:Key="CardBgBrush">#FFFFFF</SolidColorBrush>
@@ -23,17 +26,20 @@
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="NavigationBrush">#152E2E</SolidColorBrush>
+          <SolidColorBrush x:Key="NavigationSelectionBrush">#305852</SolidColorBrush>
+          <SolidColorBrush x:Key="NavigationSelectionTextBrush">#F1FFFB</SolidColorBrush>
           <SolidColorBrush x:Key="NoteBrush">#263F3E</SolidColorBrush>
-          <SolidColorBrush x:Key="WindowBgBrush">#181D26</SolidColorBrush>
-          <SolidColorBrush x:Key="CardBgBrush">#212836</SolidColorBrush>
-          <SolidColorBrush x:Key="CardBorderBrush">#333C4E</SolidColorBrush>
-          <SolidColorBrush x:Key="PanelBgBrush">#2A3242</SolidColorBrush>
+          <SolidColorBrush x:Key="WindowBgBrush">#171F20</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBgBrush">#212D2E</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBorderBrush">#405351</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelBgBrush">#2A3939</SolidColorBrush>
           <SolidColorBrush x:Key="SubtleTextBrush">#A9B2C4</SolidColorBrush>
           <SolidColorBrush x:Key="AccentBrush">#367970</SolidColorBrush>
-          <SolidColorBrush x:Key="ChipBgBrush">#2E3646</SolidColorBrush>
+          <SolidColorBrush x:Key="ChipBgBrush">#344646</SolidColorBrush>
           <SolidColorBrush x:Key="HighlightBrush">#EAA782</SolidColorBrush>
           <SolidColorBrush x:Key="DangerBrush">#FF6B6B</SolidColorBrush>
-          <SolidColorBrush x:Key="OkBrush">#7CD47C</SolidColorBrush>
+          <SolidColorBrush x:Key="OkBrush">#366853</SolidColorBrush>
         </ResourceDictionary>
 
       </ResourceDictionary.ThemeDictionaries>
@@ -50,7 +56,12 @@
   </Application.Resources>
 
   <Application.Styles>
-    <FluentTheme />
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Light" Accent="#08645E"/>
+        <ColorPaletteResources x:Key="Dark" Accent="#80CDBD"/>
+      </FluentTheme.Palettes>
+    </FluentTheme>
     <!-- Обязательный include: без него DataGrid не имеет шаблона и не отображает строки -->
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
 
@@ -61,8 +72,14 @@
       <Setter Property="CornerRadius" Value="8"/>
     </Style>
     <Style Selector="ListBox.navigation ListBoxItem:selected /template/ ContentPresenter">
-      <Setter Property="Background" Value="#D4EDDF"/>
-      <Setter Property="Foreground" Value="#163B3B"/>
+      <Setter Property="Background" Value="{DynamicResource NavigationSelectionBrush}"/>
+      <Setter Property="Foreground" Value="{DynamicResource NavigationSelectionTextBrush}"/>
+    </Style>
+    <Style Selector="ListBox.navigation ListBoxItem PathIcon">
+      <Setter Property="Foreground" Value="#E4EEEA"/>
+    </Style>
+    <Style Selector="ListBox.navigation ListBoxItem:selected PathIcon">
+      <Setter Property="Foreground" Value="{DynamicResource NavigationSelectionTextBrush}"/>
     </Style>
     <Style Selector="ListBox.navigation ListBoxItem:pointerover:not(:selected) /template/ ContentPresenter">
       <Setter Property="Background" Value="#2D5551"/>
@@ -99,7 +116,7 @@
 
     <Style Selector="TextBlock.subtle">
       <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}" />
-      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontSize" Value="{Binding $parent[Window].DataContext.Settings.CaptionSize, FallbackValue=13}" />
     </Style>
 
     <Style Selector="TabItem">
@@ -128,7 +145,7 @@
     </Style>
 
     <!-- Акцентная кнопка -->
-    <Style Selector="Button.accent">
+    <Style Selector="Button.primary">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="Foreground" Value="#FFFFFF" />
       <Setter Property="CornerRadius" Value="6" />
@@ -136,7 +153,7 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="MinHeight" Value="32" />
     </Style>
-    <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="Opacity" Value="0.88" />
     </Style>

@@ -4,7 +4,11 @@
       <TextBlock Classes="h1" Text="Замеры времени" TextWrapping="Wrap"/>
       <TextBlock Classes="subtle" Text="Сравните быструю и поразрядную сортировки на одинаковых наборах слов." TextWrapping="Wrap"/>
     </StackPanel>
-    <Grid Grid.Row="1" ColumnDefinitions="*,270" ColumnSpacing="14">
+    <Grid Grid.Row="1" ColumnSpacing="14">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="0.44*" MinWidth="270" MaxWidth="440"/>
+      </Grid.ColumnDefinitions>
       <Border Classes="card">
         <Grid RowDefinitions="Auto,*" RowSpacing="6">
           <TextBlock Classes="h2" Text="Время сортировки" TextWrapping="Wrap"/>
@@ -31,7 +35,7 @@
             </Grid>
             <TextBlock Text="Прогонов на алгоритм (1–20)" Classes="subtle"/>
             <NumericUpDown Minimum="1" Maximum="20" Increment="1" Value="{Binding BenchRuns}" Width="120" HorizontalAlignment="Left"/>
-            <Button Content="Запустить эксперименты" Classes="accent" Command="{Binding RunBenchmarkCommand}" IsEnabled="{Binding CanRunBench}"/>
+            <Button Content="Запустить замеры" Classes="primary" Command="{Binding RunBenchmarkCommand}" IsEnabled="{Binding CanRunBench}"/>
             <Button Content="Отменить" Command="{Binding CancelBenchmarkCommand}" IsEnabled="{Binding BenchRunning}"/>
             <ProgressBar Value="{Binding BenchProgress}" Maximum="100" Height="10"/>
             <TextBlock Text="{Binding BenchStatus}" Classes="subtle" TextWrapping="Wrap"/>
