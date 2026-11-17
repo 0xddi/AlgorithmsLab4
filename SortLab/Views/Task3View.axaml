@@ -20,7 +20,9 @@
       <Border MaxWidth="1160" Classes="scene">
         <Grid RowDefinitions="Auto,*,Auto,*" RowSpacing="6">
           <TextBlock Classes="h2" Text="Слова по порядку" TextWrapping="Wrap"/>
-          <controls:WordSortVisualizer Grid.Row="1" DelayMs="{Binding DelayMs}" Words="{Binding Chips}" Message="{Binding VisualMessage}" ChipBrush="{Binding Settings.BarNormalBrush}" TextBrush="{Binding Settings.LabelBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}"/>
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" Background="Transparent">
+            <controls:WordSortVisualizer DelayMs="{Binding DelayMs}" Words="{Binding Chips}" Message="{Binding VisualMessage}" ChipBrush="{Binding Settings.BarNormalBrush}" TextBrush="{Binding Settings.LabelBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}"/>
+          </ScrollViewer>
           <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12">
             <TextBlock Classes="h2" Text="Частота слов" TextWrapping="Wrap"/>
             <TextBlock Classes="subtle" Text="{Binding FrequencyInfo}" TextWrapping="Wrap"/>
