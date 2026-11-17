@@ -63,9 +63,9 @@ public class SortVisualizer : Control
     public IBrush? PivotBrush { get => GetValue(PivotBrushProperty); set => SetValue(PivotBrushProperty, value); }
     public IBrush? LabelBrush { get => GetValue(LabelBrushProperty); set => SetValue(LabelBrushProperty, value); }
 
-    public static readonly StyledProperty<double> DelayMsProperty =
-        AvaloniaProperty.Register<SortVisualizer, double>(nameof(DelayMs), 150);
-    public double DelayMs { get => GetValue(DelayMsProperty); set => SetValue(DelayMsProperty, value); }
+    public static readonly StyledProperty<double> MoveDurationMsProperty =
+        AvaloniaProperty.Register<SortVisualizer, double>(nameof(MoveDurationMs), 250);
+    public double MoveDurationMs { get => GetValue(MoveDurationMsProperty); set => SetValue(MoveDurationMsProperty, value); }
 
     private readonly Dictionary<int, FormattedText> _labels = new();
     private static readonly Typeface LabelTypeface = new("Inter, Segoe UI");
@@ -87,7 +87,7 @@ public class SortVisualizer : Control
     {
         base.OnPropertyChanged(change);
         if (change.Property == LabelBrushProperty) _labels.Clear();
-        if (change.Property == DelayMsProperty && DelayMs <= 0)
+        if (change.Property == MoveDurationMsProperty && MoveDurationMs <= 0)
         {
             _duration = 0;
             InvalidateVisual();
@@ -98,41 +98,27 @@ public class SortVisualizer : Control
 
     private void BeginMove(IReadOnlyList<SortBar>? previous, IReadOnlyList<SortBar>? next)
     {
-        if (previous is null || next is null || previous.Count != next.Count || DelayMs <= 0)
+        if (previous is null || next is null || previous.Count != next.Count || MoveDurationMs <= 0)
         {
             _duration = 0;
             return;
         }
 
-        int first = -1, second = -1, changes = 0;
-        for (int i = 0; i < next.Count; i++)
-        {
-            if (previous[i].Value == next[i].Value) continue;
-            if (changes == 0) first = i;
-            if (changes == 1) second = i;
-            changes++;
-        }
-        if (changes == 0) return; // Изменение подсветки не прерывает перемещение.
-        bool swap = changes == 2 && previous[first].Value == next[second].Value
-                                && previous[second].Value == next[first].Value;
+        var sources = MovementSources.Match(previous, next, bar => bar.Value);
+        if (sources is null) return;
         double t = Progress();
-        if (_fromSlot.Length != next.Count)
-        {
-            _fromSlot = new double[next.Count];
-            _fromValue = new double[next.Count];
-            t = 1;
-        }
+        var slots = new double[next.Count];
+        var values = new double[next.Count];
         for (int i = 0; i < next.Count; i++)
         {
-            _fromSlot[i] += (i - _fromSlot[i]) * t;
-            _fromValue[i] += (previous[i].Value - _fromValue[i]) * t;
+            int source = sources[i];
+            slots[i] = t >= 1 ? source : _fromSlot[source] + (source - _fromSlot[source]) * t;
+            values[i] = t >= 1 ? previous[source].Value
+                : _fromValue[source] + (previous[source].Value - _fromValue[source]) * t;
         }
-        if (swap)
-        {
-            (_fromSlot[first], _fromSlot[second]) = (_fromSlot[second], _fromSlot[first]);
-            (_fromValue[first], _fromValue[second]) = (_fromValue[second], _fromValue[first]);
-        }
-        _duration = Math.Min(170, DelayMs);
+        _fromSlot = slots;
+        _fromValue = values;
+        _duration = MoveDurationMs;
         _started = Stopwatch.GetTimestamp();
     }
 
