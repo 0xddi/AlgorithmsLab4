@@ -6,14 +6,21 @@ namespace SortLab.Algorithms.Internal;
 public sealed class HeapSort : ISortAlgorithm
 {
     public string Name => "Пирамидальная (Heap Sort)";
-    public string Description => "Усовершенствованный алгоритм: строим пирамиду, где родитель больше детей, и по одному вынимаем максимум в конец.";
+    public string Description =>
+        """
+        Представьте массив как дерево: первая ячейка — корень. Если считать позиции от 1, у родителя на позиции p дети находятся на 2p и 2p + 1, пока эти позиции входят в кучу. Чтобы найти родителя, делим позицию ребёнка на 2 и отбрасываем остаток. Роли определяет место, а значения нужны для сравнения.
+
+        В [4, 9, 6, 2, 7] дети числа 4 — числа 9 и 6. У числа 9 тоже есть дети: 2 и 7. В макс-куче каждый родитель не меньше своих детей. Чтобы исправить вершину, выбираем большего ребёнка: 9 поднимается вместо 4. Затем 4 сравниваем с 2 и 7 и опускаем ещё раз. Это просеивание вниз.
+
+        Строим кучу снизу вверх. Максимум оказывается в корне. Меняем его с последним числом кучи, исключаем эту позицию и снова просеиваем корень. Так справа растёт готовая часть массива.
+        """;
 
     public IEnumerable<SortStep> GetSteps(int[] input) => Run(new SortCtx(input));
 
     private static IEnumerable<SortStep> Run(SortCtx c)
     {
         c.MarkAll(StepMark.Normal);
-        yield return c.S(SortOpType.Info, -1, -1, "Сначала наведём «пирамидальный» порядок: в пирамиде каждый родитель больше своих детей.");
+        yield return c.S(SortOpType.Info, -1, -1, "Сначала наведём «пирамидальный» порядок: в пирамиде каждый родитель не меньше своих детей.");
 
         // Построение пирамиды снизу вверх.
         for (int i = c.N / 2 - 1; i >= 0; i--)
@@ -52,7 +59,7 @@ public sealed class HeapSort : ISortAlgorithm
                 c.Mark(child, StepMark.Compare);
                 c.Mark(child + 1, StepMark.Compare);
                 yield return c.S(SortOpType.Compare, child, child + 1,
-                    $"Сравниваем детей {c.A[child]} и {c.A[child + 1]}: выбираем большего.");
+                    $"У родителя на позиции {root + 1} два ребёнка: {c.A[child]} на позиции {child + 1} и {c.A[child + 1]} на позиции {child + 2}. Выбираем большего.");
                 c.Mark(child, StepMark.Normal);
                 c.Mark(child + 1, StepMark.Normal);
                 if (c.A[child + 1] > c.A[child]) child++;
@@ -66,8 +73,9 @@ public sealed class HeapSort : ISortAlgorithm
                 c.Swap(root, child);
                 c.Mark(root, StepMark.Swap);
                 c.Mark(child, StepMark.Swap);
-                yield return c.S(SortOpType.Swap, root, child, $"{c.A[child]} больше {c.A[root]} — меняем их местами, чтобы восстановить пирамиду.");
+                yield return c.S(SortOpType.Swap, root, child, $"{c.A[root]} поднимается на позицию {root + 1}, а {c.A[child]} опускается на позицию {child + 1}. Продолжаем просеивание оттуда.");
                 c.Mark(root, StepMark.Normal);
+                c.Mark(child, StepMark.Normal);
                 root = child;
             }
             else
@@ -85,7 +93,12 @@ public sealed class HeapSort : ISortAlgorithm
 public sealed class QuickSort : ISortAlgorithm
 {
     public string Name => "Быстрая (Quick Sort)";
-    public string Description => "Усовершенствованный алгоритм: делим массив опорным числом на «меньше» и «больше», затем сортируем половинки.";
+    public string Description =>
+        """
+        Опорное число — значение, с которым сравниваем весь выбранный участок. Здесь берём последнее число. Просматриваем остальные слева направо: каждое строго меньшее переносим к левой границе. Равные опорному и большие остаются в другой группе.
+
+        В [6, 2, 4] опорное — 4. Число 2 переходит влево, затем ставим 4 между группами: [2, 4, 6]. Позиция 4 уже окончательная. Повторяем то же правило отдельно слева и справа — это рекурсия. Участок длиной 0 или 1 уже готов; части могут быть разной длины.
+        """;
 
     public IEnumerable<SortStep> GetSteps(int[] input) => Run(new SortCtx(input));
 
@@ -109,7 +122,7 @@ public sealed class QuickSort : ISortAlgorithm
 
         int pivot = c.A[r];
         c.Mark(r, StepMark.Pivot);
-        yield return c.S(SortOpType.Info, r, -1, $"Берём кусок [{l}..{r}]. Опорное число — {pivot} (фиолетовое). Меньшие — налево, большие — направо.");
+        yield return c.S(SortOpType.Info, r, -1, $"Берём позиции с {l + 1} по {r + 1}. Опорное число — последнее на этом участке: {pivot}. Слева собираем числа меньше него.");
 
         int i = l - 1;
         for (int j = l; j < r; j++)
@@ -125,6 +138,7 @@ public sealed class QuickSort : ISortAlgorithm
                     c.Mark(i, StepMark.Swap);
                     c.Mark(j, StepMark.Swap);
                     yield return c.S(SortOpType.Swap, i, j, $"{c.A[i]} меньше опорного — отправляем его в левую часть: меняем местами {c.A[i]} и {c.A[j]}.");
+                    c.Mark(i, StepMark.Normal);
                 }
             }
             c.Mark(j, StepMark.Normal);
@@ -138,9 +152,9 @@ public sealed class QuickSort : ISortAlgorithm
             c.Mark(r, StepMark.Swap);
             yield return c.S(SortOpType.Swap, p, r, $"Ставим опорное число ровно на место: меняем местами {c.A[p]} и {c.A[r]}.");
         }
-        c.Mark(p, StepMark.Sorted);
         c.Mark(r, StepMark.Normal);
-        yield return c.S(SortOpType.MarkSorted, p, -1, $"Опорное {c.A[p]} встало на позицию {p}: слева всё меньше, справа всё больше.");
+        c.Mark(p, StepMark.Sorted);
+        yield return c.S(SortOpType.MarkSorted, p, -1, $"Опорное {c.A[p]} встало на позицию {p + 1}: слева числа меньше, справа — больше или равны.");
 
         foreach (var s in Quick(c, l, p - 1)) yield return s;
         foreach (var s in Quick(c, p + 1, r)) yield return s;

@@ -18,7 +18,7 @@ public partial class Task3ViewModel : ObservableObject
     private readonly PlaybackEngine _engine = new();
     private CancellationTokenSource? _cts;
     private CancellationTokenSource? _benchmarkCancellation;
-    private IEnumerator<StringSortStep>? _enumerator;
+    private StepCursor<StringSortStep>? _enumerator;
     private string[] _words = [];
     private string[] _sortedWords = [];
     private bool _finished;
@@ -89,6 +89,7 @@ public partial class Task3ViewModel : ObservableObject
 
     public bool CanStart => _words.Length > 0 && !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
+    public bool CanStepBack => !IsPlaying && _currentStepNo > 0;
     public bool CanStep => _words.Length > 0 && !IsPlaying;
 
     // ---------- Эксперименты ----------
@@ -154,6 +155,7 @@ public partial class Task3ViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(CanStart));
         OnPropertyChanged(nameof(CanStep));
+        OnPropertyChanged(nameof(CanStepBack));
     }
 
     /// <summary>Обёртка алгоритма для ComboBox.</summary>
@@ -243,7 +245,7 @@ public partial class Task3ViewModel : ObservableObject
         _engine.Reset();
         _engine.DelayMs = (int)Math.Clamp(DelayMs, 0, 2000);
         _cts = new CancellationTokenSource();
-        _enumerator ??= SelectedAlgorithm.Algo.GetSteps(_words, snapshots: false).GetEnumerator();
+        _enumerator ??= CreateCursor();
         IsPaused = false;
         IsPlaying = true;
         OnPropertyChanged(nameof(CanPause));
@@ -274,14 +276,47 @@ public partial class Task3ViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void StepBack()
+    {
+        if (!CanStepBack || _enumerator is null) return;
+        if (_currentStepNo == 1)
+        {
+            ResetRun();
+            Explanation = "Слова разобраны. Выберите алгоритм и нажмите «Старт» или «Шаг».";
+            return;
+        }
+        var op = _enumerator.Current.Op;
+        _enumerator.MoveBack();
+        Log.RemoveStep(_currentStepNo--);
+        _finished = false;
+        if (op == SortOpType.Compare) Comparisons--;
+        if (op is SortOpType.Swap or SortOpType.Assign) Moves--;
+        var step = _enumerator.Current;
+        _pendingVisual = step;
+        PublishVisual();
+        Explanation = step.Explanation;
+        ProgressText = $"Шаг {_currentStepNo}";
+        _sortedWords = step.Values;
+        Frequencies.Clear();
+        FrequencyInfo = "";
+        MaxFrequency = 1;
+    }
+
+    [RelayCommand]
     private void Step()
     {
         if (IsPlaying) return;
         if (_finished) ResetRun();
         if (_enumerator is null && _words.Length > 0)
-            _enumerator ??= SelectedAlgorithm.Algo.GetSteps(_words, snapshots: false).GetEnumerator();
+            _enumerator ??= CreateCursor();
         if (_enumerator is null) return;
         Advance();
+    }
+
+    private StepCursor<StringSortStep> CreateCursor()
+    {
+        bool showWords = _words.Length <= VisualCap;
+        return new(SelectedAlgorithm.Algo.GetSteps(_words, snapshots: showWords), showWords ? 64 : 1);
     }
 
     private bool Advance()
@@ -290,11 +325,10 @@ public partial class Task3ViewModel : ObservableObject
         if (_enumerator.MoveNext())
         {
             _currentStepNo++;
+            if (_currentStepNo == 1) OnPropertyChanged(nameof(CanStepBack));
             ApplyStep(_enumerator.Current);
             return true;
         }
-        _enumerator.Dispose();
-        _enumerator = null;
         _finished = true;
         IsPlaying = false;
         IsPaused = false;

@@ -18,6 +18,7 @@ public partial class Task2View : UserControl
     public Task2View()
     {
         InitializeComponent();
+        LegendLayout.Attach(this, LegendRail, LegendButton);
         DataContextChanged += (_, _) => WireColumns();
     }
 

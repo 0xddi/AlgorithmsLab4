@@ -19,7 +19,7 @@ public class WordSortVisualizer : Control
     private const double GapX = 6, GapY = 6, PadX = 9, PadY = 3;
     /// <summary>Резерв по высоте под подпись «… и ещё N слов» внизу.</summary>
     private const double FooterReserve = 20;
-    private static readonly IBrush MarkedTextBrush = new SolidColorBrush(Color.Parse("#212121"));
+
 
     static WordSortVisualizer()
     {
@@ -206,14 +206,12 @@ public class WordSortVisualizer : Control
             var (x, y) = CurrentPosition(i);
             var chip = words[i];
             var rect = new RoundedRect(new Rect(x, y, _widths[i], _chipH), Math.Min(5, _chipH / 2));
-            context.DrawRectangle(BrushFor(chip.Mark), null, rect);
+            var background = BrushFor(chip.Mark);
+            context.DrawRectangle(background, null, rect);
 
-            var fg = chip.Mark switch
-            {
-                StepMark.Compare => MarkedTextBrush,
-                StepMark.Swap or StepMark.Pivot => Brushes.White,
-                _ => TextBrush ?? Brushes.Gray,
-            };
+            var fg = background is ISolidColorBrush solid
+                ? ContrastingText(solid.Color)
+                : TextBrush ?? Brushes.Gray;
             var ft = Label(chip.Text, fg);
             context.DrawText(ft, new Point(x + PadX, y + (_chipH - ft.Height) / 2));
         }
@@ -225,6 +223,17 @@ public class WordSortVisualizer : Control
                 TextBrush ?? Brushes.Gray);
             context.DrawText(ft, new Point(4, bounds.Height - ft.Height - 2));
         }
+    }
+
+    private static IBrush ContrastingText(Color color)
+    {
+        static double Linear(byte component)
+        {
+            double s = component / 255.0;
+            return s <= 0.04045 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4);
+        }
+        double luminance = 0.2126 * Linear(color.R) + 0.7152 * Linear(color.G) + 0.0722 * Linear(color.B);
+        return luminance > 0.179 ? Brushes.Black : Brushes.White;
     }
 
     private FormattedText Label(string text, IBrush foreground)

@@ -9,6 +9,7 @@ public partial class Task3View : UserControl
     public Task3View()
     {
         InitializeComponent();
+        LegendLayout.Attach(this, LegendRail, LegendButton);
     }
 
     private async void OnBrowse(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

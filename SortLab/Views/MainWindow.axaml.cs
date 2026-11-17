@@ -15,12 +15,12 @@ public partial class MainWindow : Window
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Handled || e.KeyModifiers != KeyModifiers.Alt || e.Key is not (Key.P or Key.Right))
+        if (e.Handled || e.KeyModifiers != KeyModifiers.Alt || e.Key is not (Key.P or Key.Right or Key.Left))
             return;
 
         var playback = this.GetVisualDescendants().OfType<PlaybackControls>()
             .FirstOrDefault(control => control.IsEffectivelyVisible);
         if (playback is not null)
-            e.Handled = playback.TryExecute(e.Key == Key.Right);
+            e.Handled = playback.TryExecute(e.Key);
     }
 }
