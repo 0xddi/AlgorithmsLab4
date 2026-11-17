@@ -9,17 +9,13 @@ using SortLab.Models;
 namespace SortLab.Controls;
 
 /// <summary>
-/// Визуализация слов: рисует «чипы» со словами, перенося их по строкам и подбирая размер шрифта,
-/// чтобы всё поместилось. Перестановка двух слов анимируется — чипы плавно обмениваются местами.
+/// Визуализация слов: рисует «чипы» со словами, перенося их по строкам. Перестановка двух слов анимируется — чипы плавно обмениваются местами.
 /// Если слов нет, показывает сообщение (например, «слишком много слов»).
 /// </summary>
 public class WordSortVisualizer : Control
 {
     private const int AnimMs = 180;   // длительность анимации перестановки
     private const double GapX = 6, GapY = 6, PadX = 9, PadY = 3;
-    /// <summary>Резерв по высоте под подпись «… и ещё N слов» внизу.</summary>
-    private const double FooterReserve = 20;
-
 
     static WordSortVisualizer()
     {
@@ -86,15 +82,13 @@ public class WordSortVisualizer : Control
     private DispatcherTimer? _timer;
 
     // Кэш раскладки.
-    private double _layoutW = -1, _layoutH = -1;
+    private double _layoutW = -1, _contentHeight;
     private int _layoutCount = -1;
     private const double LabelFontSize = 16;
     private double _chipH = 20;
     private readonly List<double> _widths = new();
     private readonly List<double> _xs = new();
     private readonly List<double> _ys = new();
-    private int _visibleCount;
-    private int _hiddenCount;
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
@@ -102,14 +96,14 @@ public class WordSortVisualizer : Control
         if (change.Property == WordsProperty) OnWordsChanged(change.GetOldValue<IReadOnlyList<WordChipVm>?>());
         else if (change.Property == TextBrushProperty) _labels.Clear();
         else if (change.Property == DelayMsProperty && DelayMs <= 0) { StopAnim(); InvalidateVisual(); }
-        else if (change.Property == BoundsProperty) InvalidateLayout();
         else if (change.Property == MessageProperty) InvalidateVisual();
     }
 
     private void InvalidateLayout()
     {
-        _layoutW = _layoutH = -1;
+        _layoutW = -1;
         _layoutCount = -1;
+        InvalidateMeasure();
         InvalidateVisual();
     }
 
@@ -127,7 +121,7 @@ public class WordSortVisualizer : Control
                 else break;
             }
             if (count == 0) return;
-            if (count == 2 && DelayMs > 0 && second < _visibleCount && _layoutCount == next.Count
+            if (count == 2 && DelayMs > 0 && _layoutCount == next.Count
                 && previous[first].Text == next[second].Text && previous[second].Text == next[first].Text)
             {
                 var fromA = CurrentPosition(second);
@@ -200,8 +194,8 @@ public class WordSortVisualizer : Control
             return;
         }
 
-        EnsureLayout(bounds);
-        for (int i = 0; i < _visibleCount; i++)
+        EnsureLayout(bounds.Width);
+        for (int i = 0; i < words.Count; i++)
         {
             var (x, y) = CurrentPosition(i);
             var chip = words[i];
@@ -214,14 +208,6 @@ public class WordSortVisualizer : Control
                 : TextBrush ?? Brushes.Gray;
             var ft = Label(chip.Text, fg);
             context.DrawText(ft, new Point(x + PadX, y + (_chipH - ft.Height) / 2));
-        }
-
-        if (_hiddenCount > 0)
-        {
-            var ft = new FormattedText($"… и ещё {_hiddenCount} слов — не хватает места",
-                CultureInfo.InvariantCulture, FlowDirection.LeftToRight, LabelTypeface, 11,
-                TextBrush ?? Brushes.Gray);
-            context.DrawText(ft, new Point(4, bounds.Height - ft.Height - 2));
         }
     }
 
@@ -270,32 +256,23 @@ public class WordSortVisualizer : Control
 
     private void LogLayout(string msg) => DebugSink?.Invoke(msg);
 
-    private void EnsureLayout(Rect bounds)
+    protected override Size MeasureOverride(Size availableSize)
     {
-        var words = Words;
-        if (words is null || words.Count == 0) return;
-        if (_layoutW == bounds.Width && _layoutH == bounds.Height && _layoutCount == words.Count) return;
-        _layoutW = bounds.Width;
-        _layoutH = bounds.Height;
-        _layoutCount = words.Count;
-        LogLayout($"EnsureLayout w={bounds.Width:F0} h={bounds.Height:F0} n={words.Count}");
-
-        double availW = Math.Max(40, bounds.Width);
-
-        // Размер шрифта подбираем по числу слов, раскладку делаем один раз:
-        // перенос по строкам, а если по высоте не влезает — показываем сколько поместилось.
-        TryLayout(words, availW, bounds.Height);
-        // Если есть скрытые слова — резервируем снизу место под подпись «… и ещё N слов»
-        // и пересчитываем раскладку, чтобы подпись не наезжала на чипы.
-        if (_hiddenCount > 0)
-            TryLayout(words, availW, bounds.Height - FooterReserve);
-        LogLayout($"  font={LabelFontSize} visible={_visibleCount} hidden={_hiddenCount}");
+        EnsureLayout(availableSize.Width);
+        return new Size(0, _contentHeight);
     }
 
-    /// <summary>Раскладка «чипов» по строкам; рисуем только те, что влезли по высоте.</summary>
-    private void TryLayout(IReadOnlyList<WordChipVm> words,
-        double availW, double availH)
+    private void EnsureLayout(double width)
     {
+        var words = Words;
+        if (words is null || words.Count == 0)
+        {
+            _contentHeight = 0;
+            return;
+        }
+        if (_layoutW == width && _layoutCount == words.Count) return;
+        _layoutW = width;
+        _layoutCount = words.Count;
         _widths.Clear();
         double chipH = 0;
         foreach (var w in words)
@@ -308,27 +285,22 @@ public class WordSortVisualizer : Control
 
         _xs.Clear();
         _ys.Clear();
-        double x = 0, y = 0, rowH = 0;
-        int visible = 0;
+        double x = 0, y = 0;
         for (int i = 0; i < words.Count; i++)
         {
             double w = _widths[i];
-            if (x > 0 && x + w > availW)
+            if (x > 0 && x + w > width)
             {
                 x = 0;
-                y += rowH + GapY;
-                rowH = 0;
+                y += _chipH + GapY;
             }
-            if (y + _chipH > availH) break;
             _xs.Add(x);
             _ys.Add(y);
             x += w + GapX;
-            rowH = Math.Max(rowH, _chipH);
-            visible++;
         }
 
-        _visibleCount = visible;
-        _hiddenCount = words.Count - visible;
+        _contentHeight = y + _chipH;
+        LogLayout($"EnsureLayout w={width:F0} h={_contentHeight:F0} n={words.Count}");
     }
 
     private static double Lerp(double a, double b, double t) => a + (b - a) * t;
