@@ -147,7 +147,7 @@ public sealed class SelectionSort : ISortAlgorithm
 /// <summary>Улучшенная сортировка пузырьком: после прохода смотрим только до последнего обмена.</summary>
 public sealed class ImprovedBubbleSort : ISortAlgorithm
 {
-    public string Name => "Пузырьком, улучшенный (Bubble Sort)";
+    public string Name => "Пузырьковая сортировка";
     public string Description => "Соседние числа меняем местами, если они перепутаны; хвост после последнего обмена сразу считаем готовым.";
 
     public IEnumerable<SortStep> GetSteps(int[] input) => Run(new SortCtx(input));

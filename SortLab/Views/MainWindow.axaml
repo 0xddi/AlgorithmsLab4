@@ -11,49 +11,23 @@
         Background="{DynamicResource WindowBgBrush}"
         FontSize="{Binding Settings.FontSize}">
 
-  <SplitView DisplayMode="Inline" IsPaneOpen="True" OpenPaneLength="{Binding Settings.NavigationWidth}" PaneBackground="{DynamicResource NavigationBrush}">
-    <SplitView.Pane>
-      <Grid RowDefinitions="Auto,*,Auto" Margin="12,24,12,18">
-        <StackPanel Spacing="6" Margin="8,0,0,28">
-          <TextBlock Text="SortLab" FontSize="26" FontWeight="Bold" Foreground="White"/>
-          <TextBlock Text="Лабораторная № 4" TextWrapping="Wrap" Foreground="#C2DDD3"/>
-        </StackPanel>
-        <ListBox x:Name="Navigation" Grid.Row="1" Classes="navigation" SelectedIndex="{Binding SelectedPageIndex, Mode=TwoWay}" Background="Transparent">
-          <ListBoxItem>
-            <Grid ColumnDefinitions="15,*" ColumnSpacing="9">
-              <PathIcon Width="15" Height="15" Data="M2,17 L2,12 5,12 5,17 Z M8,17 L8,3 11,3 11,17 Z M14,17 L14,8 17,8 17,17 Z"/>
-              <TextBlock Grid.Column="1" TextWrapping="Wrap" Text="Массивы"/>
-            </Grid>
-          </ListBoxItem>
-          <ListBoxItem>
-            <Grid ColumnDefinitions="15,*" ColumnSpacing="9">
-              <PathIcon Width="15" Height="15" Data="M1,3 H18 V6 H1 Z M1,9 H8 V12 H1 Z M10,9 H18 V12 H10 Z M1,15 H8 V18 H1 Z M10,15 H18 V18 H10 Z"/>
-              <TextBlock Grid.Column="1" TextWrapping="Wrap" Text="CSV-таблицы"/>
-            </Grid>
-          </ListBoxItem>
-          <ListBoxItem>
-            <Grid ColumnDefinitions="15,*" ColumnSpacing="9">
-              <PathIcon Width="15" Height="15" Data="M1,4 H17 V6 H1 Z M1,9 H12 V11 H1 Z M1,14 H15 V16 H1 Z"/>
-              <TextBlock Grid.Column="1" TextWrapping="Wrap" Text="Слова"/>
-            </Grid>
-          </ListBoxItem>
-          <ListBoxItem>
-            <Grid ColumnDefinitions="15,*" ColumnSpacing="9">
-              <PathIcon Width="15" Height="15" Data="M1,16 L6,9 10,12 16,3 18,4 10,15 6,12 3,17 Z"/>
-              <TextBlock Grid.Column="1" TextWrapping="Wrap" Text="Замеры времени"/>
-            </Grid>
-          </ListBoxItem>
-          <ListBoxItem Content="Настройки"/>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="{DynamicResource PanelBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="26,0">
+      <Grid ColumnDefinitions="Auto,*">
+        <TextBlock Text="SortLab" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/>
+        <ListBox Grid.Column="1" x:Name="Navigation" Classes="navigation" SelectedIndex="{Binding SelectedPageIndex, Mode=TwoWay}" Background="Transparent">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate><Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,*,Auto"/></ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBoxItem Grid.Column="1" Content="Массивы"/>
+          <ListBoxItem Grid.Column="2" Content="CSV-таблицы"/>
+          <ListBoxItem Grid.Column="3" Content="Слова"/>
+          <ListBoxItem Grid.Column="4" Content="Замеры времени"/>
+          <ListBoxItem Grid.Column="6" Content="Настройки"/>
         </ListBox>
-        <StackPanel Grid.Row="2" Margin="8,0" Spacing="4">
-          <TextBlock TextWrapping="Wrap" FontSize="{Binding Settings.CaptionSize}" Foreground="#D4EDDF" Text="Alt + P   Пуск / пауза"/>
-          <TextBlock TextWrapping="Wrap" FontSize="{Binding Settings.CaptionSize}" Foreground="#D4EDDF" Text="Alt + →   Шаг вперёд"/>
-        </StackPanel>
       </Grid>
-    </SplitView.Pane>
-    <DockPanel Margin="20,16">
-      <TextBlock DockPanel.Dock="Top" Classes="subtle" Margin="0,0,0,8"
-                 Text="Лабораторная работа № 4   /   Алгоритмы сортировки"/>
+    </Border>
+    <Grid Margin="30,18" MaxWidth="1320">
       <Carousel SelectedIndex="{Binding #Navigation.SelectedIndex, Mode=OneWay}" PageTransition="{x:Null}">
         <views:Task1View Classes="page" DataContext="{Binding Task1}"/>
         <views:Task2View Classes="page" DataContext="{Binding Task2}"/>
@@ -61,6 +35,6 @@
         <views:BenchmarkView Classes="page" DataContext="{Binding Task3}"/>
         <views:SettingsView Classes="page" DataContext="{Binding Settings}"/>
       </Carousel>
-    </DockPanel>
-  </SplitView>
+    </Grid>
+  </DockPanel>
 </Window>

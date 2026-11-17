@@ -1,101 +1,96 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:SortLab.Controls" x:Class="SortLab.Views.Task1View">
-  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
-    <StackPanel Spacing="4">
-      <TextBlock Classes="h1" Text="Внутренняя сортировка" TextWrapping="Wrap"/>
-      <TextBlock Classes="subtle" Text="Проследите, как меняется порядок чисел в массиве." TextWrapping="Wrap"/>
+  <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="12" MaxWidth="1160">
+    <StackPanel HorizontalAlignment="Center" Spacing="6" Margin="0,15,0,12">
+      <TextBlock Classes="subtle" HorizontalAlignment="Center" Text="Внутренняя сортировка" FontWeight="SemiBold"/>
+      <TextBlock Classes="hero" Text="{Binding SelectedAlgorithm.Name}"/>
+      <TextBlock Text="{Binding ProgressText}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource SubtleTextBrush}"/>
     </StackPanel>
-    <Grid Grid.Row="1" ColumnSpacing="14">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="0.44*" MinWidth="270" MaxWidth="440"/>
-      </Grid.ColumnDefinitions>
-      <Border Classes="card">
-        <Grid RowDefinitions="*,Auto,Auto" RowSpacing="10">
-          <DockPanel>
-            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-              <TextBlock Text="{Binding SelectedAlgorithm.Name}" Classes="h2"/>
-              <WrapPanel Margin="0,4,0,0">
-                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,2,14,2">
-                  <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarNormalBrush}" ToolTip.Tip="Обычный"/>
-                  <TextBlock Text="обычный" Classes="subtle"/>
+    <Border Grid.Row="1" Classes="scene">
+      <controls:SortVisualizer x:Name="Visualizer" DelayMs="{Binding DelayMs}" Bars="{Binding Bars}" ShowLabels="{Binding Settings.ShowValueLabels}" NormalBrush="{Binding Settings.BarNormalBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}" LabelBrush="{Binding Settings.LabelBrush}"/>
+    </Border>
+    <ScrollViewer Grid.Row="2" MaxHeight="82" HorizontalScrollBarVisibility="Disabled">
+      <TextBlock Text="{Binding Explanation}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" TextAlignment="Center" Margin="6"/>
+    </ScrollViewer>
+    <controls:PlaybackControls Grid.Row="3" Margin="0,0,0,10"/>
+    <Border Grid.Row="4" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardBorderBrush}" Padding="0,8,0,0">
+      <WrapPanel HorizontalAlignment="Stretch" ItemSpacing="22" LineSpacing="4">
+        <TextBlock VerticalAlignment="Center" Text="{Binding ArrayLength, StringFormat='Элементов: {0}'}"/>
+        <Button Classes="link" Content="Изменить массив">
+          <Button.Flyout>
+            <Flyout Placement="Top">
+              <ScrollViewer Width="350" MaxHeight="380" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+                <StackPanel Spacing="9">
+                  <TextBlock TextWrapping="Wrap" Text="Массив (0–999, через запятую)" Classes="subtle" Margin="0,6,0,0"/>
+                  <TextBox Text="{Binding ManualInput}" AcceptsReturn="False" TextWrapping="Wrap" MaxHeight="70"/>
+                  <Button Content="Применить" Command="{Binding ApplyManualCommand}" HorizontalAlignment="Stretch"/>
+                  <TextBlock Text="{Binding InputError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding InputError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                  <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                      <TextBlock Text="Генерация массива" TextWrapping="Wrap"/>
+                    </Expander.Header>
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="Размер массива (5–100)" Classes="subtle" Margin="0,6,0,0"/>
+                      <NumericUpDown Minimum="5" Maximum="100" Increment="1" Value="{Binding ArraySize}"/>
+                      <Button Content="Новый массив" Classes="primary" Command="{Binding GenerateArrayCommand}" HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                  </Expander>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,2,14,2">
-                  <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarCompareBrush}" ToolTip.Tip="Сравнение"/>
-                  <TextBlock Text="сравнение" Classes="subtle"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,2,14,2">
-                  <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarSwapBrush}" ToolTip.Tip="Перестановка"/>
-                  <TextBlock Text="перестановка" Classes="subtle"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,2,14,2">
-                  <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarSortedBrush}" ToolTip.Tip="Отсортировано"/>
-                  <TextBlock Text="отсортировано" Classes="subtle"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,2,0,2">
-                  <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarPivotBrush}" ToolTip.Tip="Опорный"/>
-                  <TextBlock Text="опорный" Classes="subtle"/>
-                </StackPanel>
-              </WrapPanel>
-            </StackPanel>
-            <controls:SortVisualizer x:Name="Visualizer" DelayMs="{Binding DelayMs}" Bars="{Binding Bars}" ShowLabels="{Binding Settings.ShowValueLabels}" NormalBrush="{Binding Settings.BarNormalBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}" LabelBrush="{Binding Settings.LabelBrush}"/>
-          </DockPanel>
-          <Border Grid.Row="1" Background="{DynamicResource NoteBrush}" Padding="14,9" CornerRadius="8">
-            <StackPanel Spacing="3">
-              <TextBlock Classes="step" Text="{Binding ProgressText}" TextWrapping="Wrap"/>
-              <ScrollViewer MaxHeight="68">
-                <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap"/>
               </ScrollViewer>
-            </StackPanel>
-          </Border>
-          <controls:PlaybackControls Grid.Row="2"/>
-        </Grid>
-      </Border>
-      <Border Classes="card" Grid.Column="1">
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-          <StackPanel Spacing="8">
-            <TextBlock Classes="h2" Text="Параметры" TextWrapping="Wrap"/>
-            <TextBlock Text="Алгоритм" Classes="subtle"/>
-            <ComboBox ItemsSource="{Binding Algorithms}" SelectedItem="{Binding SelectedAlgorithm}" HorizontalAlignment="Stretch">
-              <ComboBox.ItemTemplate>
-                <DataTemplate>
-                  <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-            <TextBlock TextWrapping="Wrap" Text="Массив (0–999, через запятую)" Classes="subtle" Margin="0,6,0,0"/>
-            <TextBox Text="{Binding ManualInput}" AcceptsReturn="False" TextWrapping="Wrap" MaxHeight="70"/>
-            <Button Content="Применить" Command="{Binding ApplyManualCommand}" HorizontalAlignment="Stretch"/>
-            <TextBlock Text="{Binding InputError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding InputError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}" TickFrequency="100" IsSnapToTickEnabled="False"/>
-            <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle"/>
-            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-              <Expander.Header><TextBlock Text="Генерация массива" TextWrapping="Wrap"/></Expander.Header>
-              <StackPanel Spacing="8">
-                <TextBlock Text="Размер массива (5–100)" Classes="subtle" Margin="0,6,0,0"/>
-                <NumericUpDown Minimum="5" Maximum="100" Increment="1" Value="{Binding ArraySize}"/>
-                <Button Content="Новый массив" Classes="primary" Command="{Binding GenerateArrayCommand}" HorizontalAlignment="Stretch"/>
-              </StackPanel>
-            </Expander>
-            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-              <Expander.Header><TextBlock Text="Описание и статистика" TextWrapping="Wrap"/></Expander.Header>
-              <StackPanel Spacing="8">
-                <TextBlock Text="{Binding AlgorithmDescription}" TextWrapping="Wrap" Classes="subtle"/>
-                <StackPanel Spacing="3">
-                  <TextBlock Text="{Binding ProgressText}" FontWeight="SemiBold"/>
-                  <TextBlock Text="{Binding Comparisons, StringFormat='Сравнений: {0}'}"/>
-                  <TextBlock Text="{Binding Swaps, StringFormat='Перестановок: {0}'}"/>
-                  <TextBlock Text="{Binding Assignments, StringFormat='Присваиваний: {0}'}"/>
-                  <TextBlock Text="{Binding SilentRunText}" Classes="subtle" TextWrapping="Wrap"/>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+        <Button Classes="link" Content="{Binding DelayMs, StringFormat='Интервал: {0:F0} мс'}">
+          <Button.Flyout>
+            <Flyout Placement="Top">
+              <ScrollViewer Width="250" MaxHeight="380" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+                <StackPanel Spacing="9">
+                  <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}" TickFrequency="100" IsSnapToTickEnabled="False"/>
+                  <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle"/>
                 </StackPanel>
-              </StackPanel>
-            </Expander>
-            <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-          </StackPanel>
-        </ScrollViewer>
-      </Border>
-    </Grid>
-    <Border Classes="card" Grid.Row="2" Height="162">
-      <controls:LogView/>
+              </ScrollViewer>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+        <Button Classes="link" Content="Алгоритм ⌄">
+          <Button.Flyout>
+            <Flyout Placement="Top">
+              <ScrollViewer Width="350" MaxHeight="380" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+                <StackPanel Spacing="9">
+                  <ComboBox ItemsSource="{Binding Algorithms}" SelectedItem="{Binding SelectedAlgorithm}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                      <TextBlock Text="Описание и статистика" TextWrapping="Wrap"/>
+                    </Expander.Header>
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="{Binding AlgorithmDescription}" TextWrapping="Wrap" Classes="subtle"/>
+                      <StackPanel Spacing="3">
+                        <StackPanel Orientation="Horizontal" Spacing="8"><Ellipse Width="10" Height="10" Fill="{Binding Settings.BarNormalBrush}"/><TextBlock Text="Обычный элемент"/></StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8"><Ellipse Width="10" Height="10" Fill="{Binding Settings.BarCompareBrush}"/><TextBlock Text="Сравнение"/></StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8"><Ellipse Width="10" Height="10" Fill="{Binding Settings.BarSwapBrush}"/><TextBlock Text="Перестановка"/></StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8"><Ellipse Width="10" Height="10" Fill="{Binding Settings.BarSortedBrush}"/><TextBlock Text="Отсортировано"/></StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8"><Ellipse Width="10" Height="10" Fill="{Binding Settings.BarPivotBrush}"/><TextBlock Text="Опорный элемент"/></StackPanel>
+                        <TextBlock Text="{Binding ProgressText}" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding Comparisons, StringFormat='Сравнений: {0}'}"/>
+                        <TextBlock Text="{Binding Swaps, StringFormat='Перестановок: {0}'}"/>
+                        <TextBlock Text="{Binding Assignments, StringFormat='Присваиваний: {0}'}"/>
+                        <TextBlock Text="{Binding SilentRunText}" Classes="subtle" TextWrapping="Wrap"/>
+                      </StackPanel>
+                    </StackPanel>
+                  </Expander>
+                  <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+              </ScrollViewer>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+        <controls:LogButton Classes="link" Content="Журнал операций ↗"/>
+      </WrapPanel>
     </Border>
   </Grid>
 </UserControl>
