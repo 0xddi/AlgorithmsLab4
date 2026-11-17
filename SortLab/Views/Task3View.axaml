@@ -8,7 +8,7 @@
     <Border Grid.Row="1" Classes="scene">
       <Grid RowDefinitions="Auto,*,Auto,*" RowSpacing="6">
         <TextBlock Classes="h2" Text="Слова по порядку" TextWrapping="Wrap"/>
-        <controls:WordSortVisualizer Grid.Row="1" DelayMs="{Binding DelayMs}" Words="{Binding Chips}" LabelSize="{Binding Settings.FontSize}" Message="{Binding VisualMessage}" ChipBrush="{DynamicResource ChipBgBrush}" TextBrush="{Binding Settings.LabelBrush}" CompareBrush="{DynamicResource HighlightBrush}" SwapBrush="{DynamicResource OkBrush}" SortedBrush="{DynamicResource PanelBgBrush}" PivotBrush="{DynamicResource AccentBrush}"/>
+        <controls:WordSortVisualizer Grid.Row="1" DelayMs="{Binding DelayMs}" Words="{Binding Chips}" Message="{Binding VisualMessage}" ChipBrush="{DynamicResource ChipBgBrush}" TextBrush="{Binding Settings.LabelBrush}" CompareBrush="{DynamicResource HighlightBrush}" SwapBrush="{DynamicResource OkBrush}" SortedBrush="{DynamicResource PanelBgBrush}" PivotBrush="{DynamicResource AccentBrush}"/>
         <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12">
           <TextBlock Classes="h2" Text="Частота слов" TextWrapping="Wrap"/>
           <TextBlock Classes="subtle" Text="{Binding FrequencyInfo}" TextWrapping="Wrap"/>
@@ -36,65 +36,54 @@
     </ScrollViewer>
     <controls:PlaybackControls Grid.Row="3" Margin="0,0,0,10"/>
     <Border Grid.Row="4" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardBorderBrush}" Padding="0,8,0,0">
-      <WrapPanel HorizontalAlignment="Stretch" ItemSpacing="22" LineSpacing="4">
-        <Button Classes="link" Content="Текст и параметры ⌄">
-          <Button.Flyout>
-            <Flyout Placement="Top">
-              <ScrollViewer Width="350" MaxHeight="380" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-                <StackPanel Spacing="9">
-                  <TextBlock Text="Исходный текст" Classes="subtle"/>
-                  <TextBox Text="{Binding InputText}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="120" MaxHeight="220" Watermark="Введите или загрузите текст..."/>
-                  <WrapPanel>
-                    <Button Margin="0,0,6,4" Content="Из файла…" Click="OnBrowse"/>
-                    <Button Content="Разобрать" Classes="primary" Command="{Binding ApplyTextCommand}"/>
-                  </WrapPanel>
-                  <CheckBox Content="Игнорировать регистр" IsChecked="{Binding IgnoreCase}"/>
-                  <TextBlock Text="{Binding WordsInfo}" Classes="subtle" TextWrapping="Wrap"/>
-                  <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"/>
-                  <Separator Margin="0,2,0,0"/>
-                  <TextBlock Text="Алгоритм сортировки слов" Classes="subtle"/>
-                  <ComboBox ItemsSource="{Binding Algorithms}" SelectedItem="{Binding SelectedAlgorithm}" HorizontalAlignment="Stretch">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}"/>
-                  <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle"/>
-                  <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                    <Expander.Header>
-                      <TextBlock Text="Генерация текста" TextWrapping="Wrap"/>
-                    </Expander.Header>
-                    <StackPanel Spacing="8">
-                      <TextBlock Text="Сгенерировать тестовый текст" Classes="subtle"/>
-                      <WrapPanel>
-                        <NumericUpDown Minimum="50" Maximum="20000" Increment="50" Value="{Binding GenerateCount}" Width="120"/>
-                        <TextBlock Text="слов" VerticalAlignment="Center"/>
-                        <Button Content="Сгенерировать" Command="{Binding GenerateTextCommand}" Margin="6,0,0,0"/>
-                      </WrapPanel>
-                    </StackPanel>
-                  </Expander>
-                  <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                    <Expander.Header>
-                      <TextBlock Text="Статистика" TextWrapping="Wrap"/>
-                    </Expander.Header>
-                    <StackPanel Spacing="8">
-                      <StackPanel Spacing="3" Margin="0,4,0,0">
-                        <TextBlock Text="{Binding ProgressText}" FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding Comparisons, StringFormat='Сравнений: {0}'}"/>
-                        <TextBlock Text="{Binding Moves, StringFormat='Операций размещения: {0}'}"/>
-                      </StackPanel>
-                    </StackPanel>
-                  </Expander>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+        <controls:DetailButton Classes="link" Content="Текст и параметры">
+          <controls:DetailButton.Detail>
+            <Grid ColumnDefinitions="*,*" Width="640" ColumnSpacing="24" VerticalAlignment="Top">
+              <StackPanel Grid.Column="0" Spacing="8">
+                <TextBlock Text="Исходный текст" Classes="subtle"/>
+                <TextBox Text="{Binding InputText}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="120" MaxHeight="220" Watermark="Введите или загрузите текст..."/>
+                <WrapPanel>
+                  <Button Margin="0,0,6,4" Content="Из файла…" Click="OnBrowse"/>
+                  <Button Content="Разобрать" Classes="primary" Command="{Binding ApplyTextCommand}"/>
+                </WrapPanel>
+                <CheckBox Content="Игнорировать регистр" IsChecked="{Binding IgnoreCase}"/>
+                <TextBlock Text="{Binding WordsInfo}" Classes="subtle" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="8">
+                <TextBlock Text="Алгоритм сортировки слов" Classes="subtle"/>
+                <ComboBox ItemsSource="{Binding Algorithms}" SelectedItem="{Binding SelectedAlgorithm}" HorizontalAlignment="Stretch">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}"/>
+                <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle"/>
+                <TextBlock Text="Генерация текста" TextWrapping="Wrap" Classes="h2"/>
+                <TextBlock Text="Сгенерировать тестовый текст" Classes="subtle"/>
+                <WrapPanel>
+                  <NumericUpDown Minimum="50" Maximum="20000" Increment="50" Value="{Binding GenerateCount}" Width="120"/>
+                  <TextBlock Text="слов" VerticalAlignment="Center"/>
+                  <Button Content="Сгенерировать" Command="{Binding GenerateTextCommand}" Margin="6,0,0,0"/>
+                </WrapPanel>
+                <TextBlock Text="Статистика" TextWrapping="Wrap" Classes="h2"/>
+                <StackPanel Spacing="3" Margin="0,4,0,0">
+                  <TextBlock Text="{Binding ProgressText}" FontWeight="SemiBold"/>
+                  <TextBlock Text="{Binding Comparisons, StringFormat='Сравнений: {0}'}"/>
+                  <TextBlock Text="{Binding Moves, StringFormat='Операций размещения: {0}'}"/>
                 </StackPanel>
-              </ScrollViewer>
-            </Flyout>
-          </Button.Flyout>
-        </Button>
+              </StackPanel>
+            </Grid>
+          </controls:DetailButton.Detail>
+        </controls:DetailButton>
         <Button Classes="link" Content="К замерам времени" Command="{Binding $parent[Window].DataContext.OpenBenchmarksCommand}"/>
-        <controls:LogButton Classes="link" Content="Журнал операций ↗"/>
-      </WrapPanel>
+        <controls:DetailButton Classes="link" Content="Журнал операций">
+          <controls:DetailButton.Detail><controls:LogView Width="820" Height="320"/></controls:DetailButton.Detail>
+        </controls:DetailButton>
+      </StackPanel>
     </Border>
   </Grid>
 </UserControl>

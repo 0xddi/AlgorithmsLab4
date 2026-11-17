@@ -9,7 +9,7 @@
         Title="Сортировки — лабораторный стенд"
         Width="1352" Height="860" MinWidth="1000" MinHeight="660"
         Background="{DynamicResource WindowBgBrush}"
-        FontSize="{Binding Settings.FontSize}">
+        FontSize="16">
 
   <DockPanel>
     <Border DockPanel.Dock="Top" Background="{DynamicResource PanelBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="26,0">

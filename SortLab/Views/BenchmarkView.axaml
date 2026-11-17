@@ -22,26 +22,24 @@
       <StackPanel Orientation="Horizontal" Spacing="12">
         <Button Content="Запустить замеры" Classes="primary" Command="{Binding RunBenchmarkCommand}" IsEnabled="{Binding CanRunBench}"/>
         <Button Content="Отменить" Command="{Binding CancelBenchmarkCommand}" IsVisible="{Binding BenchRunning}"/>
-        <Button Classes="link" Content="Параметры замеров ⌄">
-          <Button.Flyout>
-            <Flyout Placement="Top">
-              <ScrollViewer Width="350" MaxHeight="380" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-                <StackPanel Spacing="9">
-                  <TextBlock Classes="h2" Text="Параметры" TextWrapping="Wrap"/>
-                  <TextBlock Text="QuickSort и MSD Radix" FontWeight="SemiBold"/>
-                  <TextBlock Text="{Binding BenchLengthsText}" Classes="subtle" TextWrapping="Wrap"/>
-                  <NumericUpDown Minimum="50" Maximum="50000" Increment="50" Value="{Binding CustomBenchLength}" HorizontalAlignment="Stretch"/>
-                  <Grid ColumnDefinitions="*,*" ColumnSpacing="5">
-                    <Button Grid.Column="0" Content="Добавить" Command="{Binding AddBenchLengthCommand}" HorizontalContentAlignment="Center"/>
-                    <Button Grid.Column="1" Content="Сбросить" Command="{Binding ResetBenchLengthsCommand}" HorizontalContentAlignment="Center"/>
-                  </Grid>
-                  <TextBlock Text="Прогонов на алгоритм (1–20)" Classes="subtle"/>
-                  <NumericUpDown Minimum="1" Maximum="20" Increment="1" Value="{Binding BenchRuns}" Width="120" HorizontalAlignment="Left"/>
-                </StackPanel>
-              </ScrollViewer>
-            </Flyout>
-          </Button.Flyout>
-        </Button>
+        <controls:DetailButton Classes="link" Content="Параметры замеров">
+          <controls:DetailButton.Detail>
+            <Grid ColumnDefinitions="*" Width="340" ColumnSpacing="24" VerticalAlignment="Top">
+              <StackPanel Grid.Column="0" Spacing="8">
+                <TextBlock Classes="h2" Text="Параметры" TextWrapping="Wrap"/>
+                <TextBlock Text="QuickSort и MSD Radix" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding BenchLengthsText}" Classes="subtle" TextWrapping="Wrap"/>
+                <NumericUpDown Minimum="50" Maximum="50000" Increment="50" Value="{Binding CustomBenchLength}" HorizontalAlignment="Stretch"/>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="5">
+                  <Button Grid.Column="0" Content="Добавить" Command="{Binding AddBenchLengthCommand}" HorizontalContentAlignment="Center"/>
+                  <Button Grid.Column="1" Content="Сбросить" Command="{Binding ResetBenchLengthsCommand}" HorizontalContentAlignment="Center"/>
+                </Grid>
+                <TextBlock Text="Прогонов на алгоритм (1–20)" Classes="subtle"/>
+                <NumericUpDown Minimum="1" Maximum="20" Increment="1" Value="{Binding BenchRuns}" Width="120" HorizontalAlignment="Left"/>
+              </StackPanel>
+            </Grid>
+          </controls:DetailButton.Detail>
+        </controls:DetailButton>
       </StackPanel>
       <ProgressBar Value="{Binding BenchProgress}" Maximum="100" Height="4" IsVisible="{Binding BenchRunning}"/>
     </StackPanel>

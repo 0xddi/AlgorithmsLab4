@@ -6,7 +6,7 @@ using SortLab.Services;
 namespace SortLab.ViewModels;
 
 /// <summary>
-/// Глобальные настройки: тема, размер шрифта, цветовая схема визуализации, подписи значений.
+/// Глобальные настройки: тема, цветовая схема визуализации, подписи значений.
 /// Изменения мгновенно применяются и сохраняются в JSON.
 /// </summary>
 public partial class SettingsViewModel : ObservableObject
@@ -15,12 +15,6 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _darkTheme;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CaptionSize))]
-    private double _fontSize = 14;
-
-    public double CaptionSize => Math.Max(12, FontSize * 0.85);
 
     [ObservableProperty]
     private int _colorSchemeIndex;
@@ -47,7 +41,6 @@ public partial class SettingsViewModel : ObservableObject
     {
         _service = service;
         _darkTheme = settings.DarkTheme;
-        _fontSize = settings.FontSize;
         _colorSchemeIndex = settings.ColorSchemeIndex;
         _showValueLabels = settings.ShowValueLabels;
         UpdateBrushes();
@@ -56,13 +49,11 @@ public partial class SettingsViewModel : ObservableObject
     public AppSettings ToSettings() => new()
     {
         DarkTheme = DarkTheme,
-        FontSize = FontSize,
         ColorSchemeIndex = ColorSchemeIndex,
         ShowValueLabels = ShowValueLabels,
     };
 
     partial void OnDarkThemeChanged(bool value) => OnAnyChanged();
-    partial void OnFontSizeChanged(double value) => OnAnyChanged();
     partial void OnColorSchemeIndexChanged(int value) => OnAnyChanged();
     partial void OnShowValueLabelsChanged(bool value) => OnAnyChanged();
 

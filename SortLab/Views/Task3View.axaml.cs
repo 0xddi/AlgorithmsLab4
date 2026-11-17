@@ -13,7 +13,7 @@ public partial class Task3View : UserControl
 
     private async void OnBrowse(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var top = TopLevel.GetTopLevel(this);
+        var top = TopLevel.GetTopLevel(sender as Control ?? this);
         if (top is null || DataContext is not Task3ViewModel vm) return;
 
         var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions

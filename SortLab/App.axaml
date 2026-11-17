@@ -87,6 +87,11 @@
       <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
     </Style>
+    <Style Selector="FlyoutPresenter.details">
+      <Setter Property="MaxWidth" Value="900"/>
+      <Setter Property="MaxHeight" Value="Infinity"/>
+      <Setter Property="Padding" Value="18"/>
+    </Style>
     <Style Selector="Button.link">
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="Foreground" Value="{DynamicResource LinkBrush}"/>
@@ -123,7 +128,7 @@
 
     <Style Selector="TextBlock.subtle">
       <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}" />
-      <Setter Property="FontSize" Value="{Binding $parent[Window].DataContext.Settings.CaptionSize, FallbackValue=13}" />
+      <Setter Property="FontSize" Value="13" />
     </Style>
 
     <Style Selector="TabItem">

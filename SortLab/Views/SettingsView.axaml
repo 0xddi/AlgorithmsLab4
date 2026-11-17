@@ -20,11 +20,6 @@
           <TextBlock Text="Цветовая схема визуализации" Classes="subtle" />
           <ComboBox ItemsSource="{Binding ColorSchemes}" SelectedIndex="{Binding ColorSchemeIndex}" MinWidth="200" />
 
-          <TextBlock Text="Размер шрифта" Classes="subtle" Margin="0,6,0,0" />
-          <Slider Minimum="11" Maximum="22" Value="{Binding FontSize}" Width="320" HorizontalAlignment="Left"
-                  TickFrequency="1" IsSnapToTickEnabled="True" />
-          <TextBlock Text="{Binding FontSize, StringFormat='Шрифт: {0:F0}'}" Classes="subtle" />
-
           <CheckBox Content="Показывать подписи значений над столбиками" IsChecked="{Binding ShowValueLabels}" Margin="0,6,0,0" />
         </StackPanel>
       </Border>
