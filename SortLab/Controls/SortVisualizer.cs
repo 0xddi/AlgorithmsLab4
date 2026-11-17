@@ -160,11 +160,11 @@ public class SortVisualizer : Control
         int n = bars.Count;
         const double topPad = 8;
         bool showPositions = ShowLabels && bounds.Width / n >= 32;
-        double bottomPad = showPositions ? 22 : 4;
+        double bottomPad = showPositions ? 48 : 4;
         double labelSpace = ShowLabels ? 18 : 0;
         double slotWidth = bounds.Width / n;
-        double gap = Math.Min(28, slotWidth * 0.30);
-        double barW = slotWidth - gap;
+        double barW = Math.Min(78, slotWidth * (n <= 24 ? 0.60 : 0.85));
+        double gap = slotWidth - barW;
         if (barW <= 0) return;
 
         double t = Progress();
@@ -183,9 +183,15 @@ public class SortVisualizer : Control
             _labelSize = fontSize;
             _labels.Clear();
         }
+        int firstCompared = -1, lastCompared = -1;
         for (int i = 0; i < n; i++)
         {
             var bar = bars[i];
+            if (bar.Mark == StepMark.Compare)
+            {
+                if (firstCompared < 0) firstCompared = i;
+                lastCompared = i;
+            }
             double slot = t >= 1 ? i : _fromSlot[i] + (i - _fromSlot[i]) * t;
             double value = t >= 1 ? bar.Value : _fromValue[i] + (bar.Value - _fromValue[i]) * t;
             double x = slot * slotWidth + gap / 2;
@@ -214,6 +220,20 @@ public class SortVisualizer : Control
         // Базовая линия под столбиками.
         var pen = new Pen(LabelBrush ?? Brushes.Gray, 1, null, PenLineCap.Round);
         context.DrawLine(pen, new Point(0, topPad + labelSpace + plotHeight), new Point(bounds.Width, topPad + labelSpace + plotHeight));
+
+        if (showPositions && lastCompared > firstCompared)
+        {
+            double left = (firstCompared + 0.5) * slotWidth;
+            double right = (lastCompared + 0.5) * slotWidth;
+            double y = bounds.Height - 20;
+            context.DrawLine(pen, new Point(left, y - 5), new Point(left, y));
+            context.DrawLine(pen, new Point(left, y), new Point(right, y));
+            context.DrawLine(pen, new Point(right, y), new Point(right, y - 5));
+            var caption = new FormattedText("сравнение", CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight, LabelTypeface, 12, LabelBrush ?? Brushes.Gray);
+            double x = Math.Clamp((left + right - caption.Width) / 2, 0, Math.Max(0, bounds.Width - caption.Width));
+            context.DrawText(caption, new Point(x, y + 2));
+        }
     }
 
     private FormattedText Label(int number)

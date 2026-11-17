@@ -1,115 +1,98 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:SortLab.Controls" x:Class="SortLab.Views.Task2View">
-  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
-    <StackPanel Spacing="4">
-      <TextBlock Classes="h1" Text="Внешняя сортировка" TextWrapping="Wrap"/>
-      <TextBlock Classes="subtle" Text="Сравнивайте записи по выбранному столбцу и следите за слиянием серий." TextWrapping="Wrap"/>
+  <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="12" MaxWidth="1160">
+    <StackPanel HorizontalAlignment="Center" Spacing="6" Margin="0,5,0,9">
+      <TextBlock Classes="subtle" HorizontalAlignment="Center" Text="CSV-таблицы"/>
+      <TextBlock Classes="hero" Text="Внешняя сортировка"/>
+      <TextBlock Text="{Binding FileName}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource SubtleTextBrush}"/>
     </StackPanel>
-    <Grid Grid.Row="1" ColumnSpacing="14">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="0.44*" MinWidth="270" MaxWidth="440"/>
-      </Grid.ColumnDefinitions>
-      <Border Classes="card">
-        <Grid RowDefinitions="*,Auto,Auto" RowSpacing="10">
-          <TabControl>
-            <TabItem Header="Серии и ленты">
-              <Panel>
-                <TextBlock Classes="subtle" IsVisible="{Binding !Tapes.Count}" TextWrapping="Wrap"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"
-                           Text="Серии появятся после первого шага сортировки."/>
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                  <ItemsControl ItemsSource="{Binding Tapes}">
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <StackPanel Spacing="8"/>
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate>
-                        <Border Background="{DynamicResource PanelBgBrush}" CornerRadius="8" Padding="8">
-                          <StackPanel Spacing="6">
-                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
-                            <ItemsControl ItemsSource="{Binding Series}">
-                              <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                  <WrapPanel Orientation="Horizontal"/>
-                                </ItemsPanelTemplate>
-                              </ItemsControl.ItemsPanel>
-                              <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                  <Border Background="{DynamicResource ChipBgBrush}" CornerRadius="6" Padding="4" Margin="2">
-                                    <ItemsControl ItemsSource="{Binding Chips}">
-                                      <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                          <WrapPanel Orientation="Horizontal"/>
-                                        </ItemsPanelTemplate>
-                                      </ItemsControl.ItemsPanel>
-                                      <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                          <controls:HighlightBorder IsCompared="{Binding IsCompared}" IsMoved="{Binding IsMoved}">
-                                            <TextBlock Text="{Binding Text}" FontSize="12"/>
-                                          </controls:HighlightBorder>
-                                        </DataTemplate>
-                                      </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                  </Border>
-                                </DataTemplate>
-                              </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                          </StackPanel>
-                        </Border>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </ScrollViewer>
-              </Panel>
-            </TabItem>
-            <TabItem Header="Входная таблица">
-              <DataGrid x:Name="SourceGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding Table.Rows}"/>
-            </TabItem>
-            <TabItem Header="Результат">
-              <DataGrid x:Name="ResultGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding ResultTable.Rows}"/>
-            </TabItem>
-          </TabControl>
-          <Border Grid.Row="1" Background="{DynamicResource NoteBrush}" Padding="14,9" CornerRadius="8">
-            <StackPanel Spacing="3">
-              <TextBlock Classes="step" Text="{Binding PhaseText}" TextWrapping="Wrap"/>
-              <ScrollViewer MaxHeight="68">
-                <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap"/>
-              </ScrollViewer>
-            </StackPanel>
-          </Border>
-          <controls:PlaybackControls Grid.Row="2"/>
-        </Grid>
-      </Border>
-      <Border Classes="card" Grid.Column="1">
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-          <StackPanel Spacing="8">
-            <TextBlock Classes="h2" Text="Параметры" TextWrapping="Wrap"/>
-            <Button Content="Открыть CSV…" Classes="primary" Click="OnBrowse" HorizontalAlignment="Stretch"/>
-            <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextWrapping="Wrap"/>
-            <TextBlock Text="Метод внешней сортировки" Classes="subtle" Margin="0,4,0,0"/>
-            <ComboBox ItemsSource="{Binding SorterNames}" SelectedIndex="{Binding SelectedSorterIndex}" HorizontalAlignment="Stretch"/>
-            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsMultiway}">
-              <TextBlock Text="Число путей k:" VerticalAlignment="Center"/>
-              <NumericUpDown Minimum="2" Maximum="8" Increment="1" Value="{Binding MultiwayK}" Width="90"/>
-            </StackPanel>
-            <TextBlock Text="Ключевой атрибут" Classes="subtle" Margin="0,4,0,0"/>
-            <ComboBox ItemsSource="{Binding Table.Headers}" SelectedItem="{Binding SelectedKeyColumn}" HorizontalAlignment="Stretch"/>
-            <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}"/>
-            <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle"/>
-            <Button Content="Сохранить CSV…" Click="OnSaveResult" HorizontalAlignment="Stretch" IsEnabled="{Binding HasResult}"/>
-            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-              <Expander.Header><TextBlock Text="Примеры таблиц" TextWrapping="Wrap"/></Expander.Header>
-              <StackPanel Spacing="8">
-                <TextBlock Text="Примеры таблиц из задания" Classes="subtle" Margin="0,4,0,0"/>
-                <ComboBox ItemsSource="{Binding SampleNames}" SelectedIndex="{Binding SelectedSampleIndex}" HorizontalAlignment="Stretch"/>
-                <Button Content="Загрузить пример" Command="{Binding LoadSampleCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+    <Border Grid.Row="1" Classes="scene">
+      <TabControl>
+        <TabItem Header="Серии и ленты">
+          <Panel>
+            <TextBlock Classes="subtle" IsVisible="{Binding !Tapes.Count}" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" Text="Серии появятся после первого шага сортировки."/>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding Tapes}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="8"/>
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Background="{DynamicResource PanelBgBrush}" CornerRadius="8" Padding="8">
+                      <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                        <ItemsControl ItemsSource="{Binding Series}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <Border Background="{DynamicResource ChipBgBrush}" CornerRadius="6" Padding="4" Margin="2">
+                                <ItemsControl ItemsSource="{Binding Chips}">
+                                  <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                      <WrapPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                  </ItemsControl.ItemsPanel>
+                                  <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                      <controls:HighlightBorder IsCompared="{Binding IsCompared}" IsMoved="{Binding IsMoved}">
+                                        <TextBlock Text="{Binding Text}" FontSize="12"/>
+                                      </controls:HighlightBorder>
+                                    </DataTemplate>
+                                  </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Panel>
+        </TabItem>
+        <TabItem Header="Входная таблица">
+          <DataGrid x:Name="SourceGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding Table.Rows}"/>
+        </TabItem>
+        <TabItem Header="Результат">
+          <DataGrid x:Name="ResultGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding ResultTable.Rows}"/>
+        </TabItem>
+      </TabControl>
+    </Border>
+    <ScrollViewer Grid.Row="2" MaxHeight="82" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="2">
+        <TextBlock Text="{Binding PhaseText}" Classes="subtle" HorizontalAlignment="Center"/>
+        <TextBlock Text="{Binding Explanation}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" TextAlignment="Center" Margin="6"/>
+      </StackPanel>
+    </ScrollViewer>
+    <controls:PlaybackControls Grid.Row="3" Margin="0,0,0,10"/>
+    <Border Grid.Row="4" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardBorderBrush}" Padding="0,8,0,0">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+        <Button Classes="link" Content="Открыть CSV…" Click="OnBrowse"/>
+        <controls:DetailButton Classes="link" Content="Ключ и параметры">
+          <controls:DetailButton.Detail>
+            <Grid ColumnDefinitions="*,*,*" Width="830" ColumnSpacing="24" VerticalAlignment="Top">
+              <StackPanel Grid.Column="0" Spacing="8">
+                <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                <TextBlock Text="Метод внешней сортировки" Classes="subtle" Margin="0,4,0,0"/>
+                <ComboBox ItemsSource="{Binding SorterNames}" SelectedIndex="{Binding SelectedSorterIndex}" HorizontalAlignment="Stretch"/>
+                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsMultiway}">
+                  <TextBlock Text="Число путей k:" VerticalAlignment="Center"/>
+                  <NumericUpDown Minimum="2" Maximum="8" Increment="1" Value="{Binding MultiwayK}" Width="90"/>
+                </StackPanel>
+                <TextBlock Text="Ключевой атрибут" Classes="subtle" Margin="0,4,0,0"/>
+                <ComboBox ItemsSource="{Binding Table.Headers}" SelectedItem="{Binding SelectedKeyColumn}" HorizontalAlignment="Stretch"/>
+                <Slider Minimum="0" Maximum="2000" Value="{Binding DelayMs}"/>
+                <TextBlock Text="{Binding DelayMs, StringFormat='Задержка: {0:F0} мс'}" Classes="subtle"/>
               </StackPanel>
-            </Expander>
-            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-              <Expander.Header><TextBlock Text="Формат и отбор строк" TextWrapping="Wrap"/></Expander.Header>
-              <StackPanel Spacing="8">
+              <StackPanel Grid.Column="1" Spacing="8">
+                <TextBlock Text="Формат и отбор строк" TextWrapping="Wrap" Classes="h2"/>
                 <TextBlock Text="Разделитель" Classes="subtle" Margin="0,4,0,0"/>
                 <ComboBox SelectedIndex="{Binding SelectedSeparatorIndex}" HorizontalAlignment="Stretch">
                   <ComboBoxItem Content="Авто (по файлу)"/>
@@ -128,10 +111,12 @@
                 <ComboBox ItemsSource="{Binding FilterOptions}" SelectedIndex="{Binding FilterColumnIndex}" HorizontalAlignment="Stretch"/>
                 <TextBox Watermark="Значение фильтра, напр. Европа" Text="{Binding FilterValue}"/>
               </StackPanel>
-            </Expander>
-            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-              <Expander.Header><TextBlock Text="Сведения о файле" TextWrapping="Wrap"/></Expander.Header>
-              <StackPanel Spacing="8">
+              <StackPanel Grid.Column="2" Spacing="8">
+                <TextBlock Text="Примеры таблиц" TextWrapping="Wrap" Classes="h2"/>
+                <TextBlock Text="Примеры таблиц из задания" Classes="subtle" Margin="0,4,0,0"/>
+                <ComboBox ItemsSource="{Binding SampleNames}" SelectedIndex="{Binding SelectedSampleIndex}" HorizontalAlignment="Stretch"/>
+                <Button Content="Загрузить пример" Command="{Binding LoadSampleCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                <TextBlock Text="Сведения о файле" TextWrapping="Wrap" Classes="h2"/>
                 <TextBlock Text="{Binding SourcePath}" Classes="subtle" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding SeparatorInfo}" Classes="subtle" TextWrapping="Wrap"/>
                 <StackPanel Spacing="3">
@@ -139,16 +124,17 @@
                   <TextBlock Text="{Binding Comparisons, StringFormat='Сравнений: {0}'}"/>
                   <TextBlock Text="{Binding Moves, StringFormat='Перемещений: {0}'}"/>
                 </StackPanel>
+                <TextBlock Text="{Binding ResultInfo}" Classes="subtle" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"/>
               </StackPanel>
-            </Expander>
-            <TextBlock Text="{Binding ResultInfo}" Classes="subtle" TextWrapping="Wrap"/>
-            <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"/>
-          </StackPanel>
-        </ScrollViewer>
-      </Border>
-    </Grid>
-    <Border Classes="card" Grid.Row="2" Height="162">
-      <controls:LogView/>
+            </Grid>
+          </controls:DetailButton.Detail>
+        </controls:DetailButton>
+        <Button Classes="link" Content="Сохранить CSV…" Click="OnSaveResult" IsEnabled="{Binding HasResult}"/>
+        <controls:DetailButton Classes="link" Content="Журнал операций">
+          <controls:DetailButton.Detail><controls:LogView Width="820" Height="320"/></controls:DetailButton.Detail>
+        </controls:DetailButton>
+      </StackPanel>
     </Border>
   </Grid>
 </UserControl>

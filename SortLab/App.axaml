@@ -9,34 +9,30 @@
       <ResourceDictionary.ThemeDictionaries>
 
         <ResourceDictionary x:Key="Light">
-          <SolidColorBrush x:Key="NavigationBrush">#163B3B</SolidColorBrush>
-          <SolidColorBrush x:Key="NavigationSelectionBrush">#D4EDDF</SolidColorBrush>
-          <SolidColorBrush x:Key="NavigationSelectionTextBrush">#163B3B</SolidColorBrush>
-          <SolidColorBrush x:Key="NoteBrush">#DEF2ED</SolidColorBrush>
-          <SolidColorBrush x:Key="WindowBgBrush">#F4F6F3</SolidColorBrush>
+          <SolidColorBrush x:Key="LinkBrush">#0066CC</SolidColorBrush>
+          <SolidColorBrush x:Key="NoteBrush">#F5F5F7</SolidColorBrush>
+          <SolidColorBrush x:Key="WindowBgBrush">#FFFFFF</SolidColorBrush>
           <SolidColorBrush x:Key="CardBgBrush">#FFFFFF</SolidColorBrush>
-          <SolidColorBrush x:Key="CardBorderBrush">#D4DEDC</SolidColorBrush>
-          <SolidColorBrush x:Key="PanelBgBrush">#EFF4F1</SolidColorBrush>
-          <SolidColorBrush x:Key="SubtleTextBrush">#52686A</SolidColorBrush>
-          <SolidColorBrush x:Key="AccentBrush">#08645E</SolidColorBrush>
-          <SolidColorBrush x:Key="ChipBgBrush">#E1EDE8</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBorderBrush">#DADADF</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelBgBrush">#F5F5F7</SolidColorBrush>
+          <SolidColorBrush x:Key="SubtleTextBrush">#636368</SolidColorBrush>
+          <SolidColorBrush x:Key="AccentBrush">#0066CC</SolidColorBrush>
+          <SolidColorBrush x:Key="ChipBgBrush">#E7E7EC</SolidColorBrush>
           <SolidColorBrush x:Key="HighlightBrush">#EAA782</SolidColorBrush>
           <SolidColorBrush x:Key="DangerBrush">#AD362E</SolidColorBrush>
           <SolidColorBrush x:Key="OkBrush">#2E7D32</SolidColorBrush>
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="NavigationBrush">#152E2E</SolidColorBrush>
-          <SolidColorBrush x:Key="NavigationSelectionBrush">#305852</SolidColorBrush>
-          <SolidColorBrush x:Key="NavigationSelectionTextBrush">#F1FFFB</SolidColorBrush>
-          <SolidColorBrush x:Key="NoteBrush">#263F3E</SolidColorBrush>
-          <SolidColorBrush x:Key="WindowBgBrush">#171F20</SolidColorBrush>
-          <SolidColorBrush x:Key="CardBgBrush">#212D2E</SolidColorBrush>
-          <SolidColorBrush x:Key="CardBorderBrush">#405351</SolidColorBrush>
-          <SolidColorBrush x:Key="PanelBgBrush">#2A3939</SolidColorBrush>
-          <SolidColorBrush x:Key="SubtleTextBrush">#A9B2C4</SolidColorBrush>
-          <SolidColorBrush x:Key="AccentBrush">#367970</SolidColorBrush>
-          <SolidColorBrush x:Key="ChipBgBrush">#344646</SolidColorBrush>
+          <SolidColorBrush x:Key="LinkBrush">#70B5FF</SolidColorBrush>
+          <SolidColorBrush x:Key="NoteBrush">#29292D</SolidColorBrush>
+          <SolidColorBrush x:Key="WindowBgBrush">#19191B</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBgBrush">#242427</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBorderBrush">#414146</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelBgBrush">#29292D</SolidColorBrush>
+          <SolidColorBrush x:Key="SubtleTextBrush">#B9B9C1</SolidColorBrush>
+          <SolidColorBrush x:Key="AccentBrush">#0069C9</SolidColorBrush>
+          <SolidColorBrush x:Key="ChipBgBrush">#37373D</SolidColorBrush>
           <SolidColorBrush x:Key="HighlightBrush">#EAA782</SolidColorBrush>
           <SolidColorBrush x:Key="DangerBrush">#FF6B6B</SolidColorBrush>
           <SolidColorBrush x:Key="OkBrush">#366853</SolidColorBrush>
@@ -58,32 +54,49 @@
   <Application.Styles>
     <FluentTheme>
       <FluentTheme.Palettes>
-        <ColorPaletteResources x:Key="Light" Accent="#08645E"/>
-        <ColorPaletteResources x:Key="Dark" Accent="#80CDBD"/>
+        <ColorPaletteResources x:Key="Light" Accent="#0066CC"/>
+        <ColorPaletteResources x:Key="Dark" Accent="#64ABFF"/>
       </FluentTheme.Palettes>
     </FluentTheme>
     <!-- Обязательный include: без него DataGrid не имеет шаблона и не отображает строки -->
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
 
     <Style Selector="ListBox.navigation ListBoxItem">
-      <Setter Property="Foreground" Value="#E4EEEA"/>
-      <Setter Property="Padding" Value="12,10"/>
-      <Setter Property="Margin" Value="0,2"/>
-      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="14,15"/>
+      <Setter Property="BorderThickness" Value="0,0,0,2"/>
+      <Setter Property="CornerRadius" Value="0"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
     </Style>
     <Style Selector="ListBox.navigation ListBoxItem:selected /template/ ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource NavigationSelectionBrush}"/>
-      <Setter Property="Foreground" Value="{DynamicResource NavigationSelectionTextBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource SubtleTextBrush}"/>
+      <Setter Property="Background" Value="Transparent"/>
     </Style>
-    <Style Selector="ListBox.navigation ListBoxItem PathIcon">
-      <Setter Property="Foreground" Value="#E4EEEA"/>
+    <Style Selector="TextBlock.hero">
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="FontSize" Value="46"/>
+      <Setter Property="TextAlignment" Value="Center"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
-    <Style Selector="ListBox.navigation ListBoxItem:selected PathIcon">
-      <Setter Property="Foreground" Value="{DynamicResource NavigationSelectionTextBrush}"/>
+    <Style Selector="Border.scene">
+      <Setter Property="Background" Value="{DynamicResource PanelBgBrush}"/>
+      <Setter Property="CornerRadius" Value="22"/>
+      <Setter Property="Padding" Value="32,18"/>
     </Style>
-    <Style Selector="ListBox.navigation ListBoxItem:pointerover:not(:selected) /template/ ContentPresenter">
-      <Setter Property="Background" Value="#2D5551"/>
-      <Setter Property="Foreground" Value="White"/>
+    <Style Selector="Button.secondary">
+      <Setter Property="Background" Value="{DynamicResource WindowBgBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="FlyoutPresenter.details">
+      <Setter Property="MaxWidth" Value="900"/>
+      <Setter Property="MaxHeight" Value="Infinity"/>
+      <Setter Property="Padding" Value="18"/>
+    </Style>
+    <Style Selector="Button.link">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{DynamicResource LinkBrush}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="10,8"/>
     </Style>
     <Style Selector="TextBlock.step">
       <Setter Property="FontWeight" Value="SemiBold"/>
@@ -95,7 +108,6 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Padding" Value="12" />
-      <Setter Property="BoxShadow" Value="0 1 3 0 #080F1B22" />
     </Style>
 
     <Style Selector="Border.card.accentTop">
@@ -116,7 +128,7 @@
 
     <Style Selector="TextBlock.subtle">
       <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}" />
-      <Setter Property="FontSize" Value="{Binding $parent[Window].DataContext.Settings.CaptionSize, FallbackValue=13}" />
+      <Setter Property="FontSize" Value="13" />
     </Style>
 
     <Style Selector="TabItem">
@@ -124,7 +136,7 @@
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Button">
-      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="CornerRadius" Value="18" />
       <Setter Property="Transitions">
         <Transitions>
           <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
@@ -148,7 +160,7 @@
     <Style Selector="Button.primary">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="Foreground" Value="#FFFFFF" />
-      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="CornerRadius" Value="18" />
       <Setter Property="Padding" Value="12,6" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="MinHeight" Value="32" />
@@ -161,7 +173,7 @@
     <Style Selector="Button.danger">
       <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
       <Setter Property="Foreground" Value="#FFFFFF" />
-      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="CornerRadius" Value="18" />
       <Setter Property="Padding" Value="12,6" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="MinHeight" Value="32" />

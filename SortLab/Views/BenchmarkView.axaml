@@ -1,49 +1,49 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:SortLab.Controls" x:Class="SortLab.Views.BenchmarkView">
-  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
-    <StackPanel Spacing="4">
-      <TextBlock Classes="h1" Text="Замеры времени" TextWrapping="Wrap"/>
-      <TextBlock Classes="subtle" Text="Сравните быструю и поразрядную сортировки на одинаковых наборах слов." TextWrapping="Wrap"/>
+  <Grid RowDefinitions="Auto,*,Auto,180" RowSpacing="10" MaxWidth="1160">
+    <StackPanel HorizontalAlignment="Center" Spacing="6" Margin="0,5,0,9">
+      <TextBlock Classes="subtle" HorizontalAlignment="Center" Text="Эксперимент"/>
+      <TextBlock Classes="hero" Text="Замеры времени"/>
+      <TextBlock Text="{Binding BenchStatus}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource SubtleTextBrush}"/>
     </StackPanel>
-    <Grid Grid.Row="1" ColumnSpacing="14">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="0.44*" MinWidth="270" MaxWidth="440"/>
-      </Grid.ColumnDefinitions>
-      <Border Classes="card">
-        <Grid RowDefinitions="Auto,*" RowSpacing="6">
-          <TextBlock Classes="h2" Text="Время сортировки" TextWrapping="Wrap"/>
-          <TabControl Grid.Row="1">
-            <TabItem Header="График">
-              <controls:LineChart Categories="{Binding ChartCategories}" Series="{Binding ChartSeries}" XAxisTitle="Длина текста, слов" YAxisTitle="Время, мс" GridBrush="{Binding Settings.GridBrush}" LabelBrush="{Binding Settings.LabelBrush}" LineBrush1="{Binding Settings.ChartBrush1}" LineBrush2="{Binding Settings.ChartBrush2}" LineBrush3="{Binding Settings.ChartBrush3}" LineBrush4="{Binding Settings.ChartBrush4}"/>
-            </TabItem>
-            <TabItem Header="Столбцы">
-              <controls:BarChart Categories="{Binding ChartCategories}" Series="{Binding ChartSeries}" XAxisTitle="Длина текста, слов" YAxisTitle="Время, мс" GridBrush="{Binding Settings.GridBrush}" LabelBrush="{Binding Settings.LabelBrush}" BarBrush1="{Binding Settings.ChartBrush1}" BarBrush2="{Binding Settings.ChartBrush2}" BarBrush3="{Binding Settings.ChartBrush3}" BarBrush4="{Binding Settings.ChartBrush4}"/>
-            </TabItem>
-          </TabControl>
-        </Grid>
-      </Border>
-      <Border Classes="card" Grid.Column="1">
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-          <StackPanel Spacing="8">
-            <TextBlock Classes="h2" Text="Параметры" TextWrapping="Wrap"/>
-            <TextBlock Text="QuickSort и MSD Radix" FontWeight="SemiBold"/>
-            <TextBlock Text="{Binding BenchLengthsText}" Classes="subtle" TextWrapping="Wrap"/>
-            <NumericUpDown Minimum="50" Maximum="50000" Increment="50" Value="{Binding CustomBenchLength}" HorizontalAlignment="Stretch"/>
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="5">
-              <Button Grid.Column="0" Content="Добавить" Command="{Binding AddBenchLengthCommand}" HorizontalContentAlignment="Center"/>
-              <Button Grid.Column="1" Content="Сбросить" Command="{Binding ResetBenchLengthsCommand}" HorizontalContentAlignment="Center"/>
+    <Border Classes="scene" Grid.Row="1">
+      <Grid RowDefinitions="Auto,*" RowSpacing="6">
+        <TextBlock Classes="h2" Text="Время сортировки" TextWrapping="Wrap"/>
+        <TabControl Grid.Row="1">
+          <TabItem Header="График">
+            <controls:LineChart Categories="{Binding ChartCategories}" Series="{Binding ChartSeries}" XAxisTitle="Длина текста, слов" YAxisTitle="Время, мс" GridBrush="{Binding Settings.GridBrush}" LabelBrush="{Binding Settings.LabelBrush}" LineBrush1="{Binding Settings.ChartBrush1}" LineBrush2="{Binding Settings.ChartBrush2}" LineBrush3="{Binding Settings.ChartBrush3}" LineBrush4="{Binding Settings.ChartBrush4}"/>
+          </TabItem>
+          <TabItem Header="Столбцы">
+            <controls:BarChart Categories="{Binding ChartCategories}" Series="{Binding ChartSeries}" XAxisTitle="Длина текста, слов" YAxisTitle="Время, мс" GridBrush="{Binding Settings.GridBrush}" LabelBrush="{Binding Settings.LabelBrush}" BarBrush1="{Binding Settings.ChartBrush1}" BarBrush2="{Binding Settings.ChartBrush2}" BarBrush3="{Binding Settings.ChartBrush3}" BarBrush4="{Binding Settings.ChartBrush4}"/>
+          </TabItem>
+        </TabControl>
+      </Grid>
+    </Border>
+    <StackPanel Grid.Row="2" HorizontalAlignment="Center" Spacing="4">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Button Content="Запустить замеры" Classes="primary" Command="{Binding RunBenchmarkCommand}" IsEnabled="{Binding CanRunBench}"/>
+        <Button Content="Отменить" Command="{Binding CancelBenchmarkCommand}" IsVisible="{Binding BenchRunning}"/>
+        <controls:DetailButton Classes="link" Content="Параметры замеров">
+          <controls:DetailButton.Detail>
+            <Grid ColumnDefinitions="*" Width="340" ColumnSpacing="24" VerticalAlignment="Top">
+              <StackPanel Grid.Column="0" Spacing="8">
+                <TextBlock Classes="h2" Text="Параметры" TextWrapping="Wrap"/>
+                <TextBlock Text="QuickSort и MSD Radix" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding BenchLengthsText}" Classes="subtle" TextWrapping="Wrap"/>
+                <NumericUpDown Minimum="50" Maximum="50000" Increment="50" Value="{Binding CustomBenchLength}" HorizontalAlignment="Stretch"/>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="5">
+                  <Button Grid.Column="0" Content="Добавить" Command="{Binding AddBenchLengthCommand}" HorizontalContentAlignment="Center"/>
+                  <Button Grid.Column="1" Content="Сбросить" Command="{Binding ResetBenchLengthsCommand}" HorizontalContentAlignment="Center"/>
+                </Grid>
+                <TextBlock Text="Прогонов на алгоритм (1–20)" Classes="subtle"/>
+                <NumericUpDown Minimum="1" Maximum="20" Increment="1" Value="{Binding BenchRuns}" Width="120" HorizontalAlignment="Left"/>
+              </StackPanel>
             </Grid>
-            <TextBlock Text="Прогонов на алгоритм (1–20)" Classes="subtle"/>
-            <NumericUpDown Minimum="1" Maximum="20" Increment="1" Value="{Binding BenchRuns}" Width="120" HorizontalAlignment="Left"/>
-            <Button Content="Запустить замеры" Classes="primary" Command="{Binding RunBenchmarkCommand}" IsEnabled="{Binding CanRunBench}"/>
-            <Button Content="Отменить" Command="{Binding CancelBenchmarkCommand}" IsEnabled="{Binding BenchRunning}"/>
-            <ProgressBar Value="{Binding BenchProgress}" Maximum="100" Height="10"/>
-            <TextBlock Text="{Binding BenchStatus}" Classes="subtle" TextWrapping="Wrap"/>
-          </StackPanel>
-        </ScrollViewer>
-      </Border>
-    </Grid>
-    <Border Classes="card" Grid.Row="2" Height="180">
+          </controls:DetailButton.Detail>
+        </controls:DetailButton>
+      </StackPanel>
+      <ProgressBar Value="{Binding BenchProgress}" Maximum="100" Height="4" IsVisible="{Binding BenchRunning}"/>
+    </StackPanel>
+    <Border Grid.Row="3" Classes="card">
       <TabControl>
         <TabItem Header="Точные значения">
           <ScrollViewer HorizontalScrollBarVisibility="Auto">
@@ -51,8 +51,16 @@
               <StackPanel Orientation="Horizontal">
                 <TextBlock Width="224" Text="Объём, слов" FontWeight="SemiBold"/>
                 <ItemsControl ItemsSource="{Binding ChartCategories}">
-                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate><DataTemplate><TextBlock Width="84" TextAlignment="Right" Text="{Binding}"/></DataTemplate></ItemsControl.ItemTemplate>
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Width="84" TextAlignment="Right" Text="{Binding}"/>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
                 </ItemsControl>
               </StackPanel>
               <ItemsControl ItemsSource="{Binding ChartSeries}">
@@ -61,9 +69,17 @@
                     <StackPanel Orientation="Horizontal" Margin="0,3">
                       <TextBlock Width="224" Text="{Binding Name, StringFormat='{}{0}, мс'}" TextWrapping="Wrap"/>
                       <ItemsControl ItemsSource="{Binding Values}">
-                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate><DataTemplate><TextBlock Width="84" TextAlignment="Right" Text="{Binding StringFormat='{}{0:F2}'}"/></DataTemplate></ItemsControl.ItemTemplate>
-                </ItemsControl>
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <TextBlock Width="84" TextAlignment="Right" Text="{Binding StringFormat='{}{0:F2}'}"/>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
                     </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -72,16 +88,16 @@
           </ScrollViewer>
         </TabItem>
         <TabItem Header="Подробные результаты">
-        <DataGrid Classes="compact" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding BenchmarkResults}">
-          <DataGrid.Columns>
-            <DataGridTextColumn Header="Длина" Binding="{Binding Length}" Width="52" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
-            <DataGridTextColumn Header="Алгоритм" Binding="{Binding Algorithm}" Width="*" MinWidth="112" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
-            <DataGridTextColumn Header="Время, мс" Binding="{Binding AvgMs, StringFormat=F2}" Width="84" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
-            <DataGridTextColumn Header="Минимум, мс" Binding="{Binding MinMs, StringFormat=F2}" Width="84" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
-            <DataGridTextColumn Header="Сравнения" Binding="{Binding Comparisons}" Width="88" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
-            <DataGridTextColumn Header="Операции" Binding="{Binding Moves}" Width="84" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
-          </DataGrid.Columns>
-        </DataGrid>
+          <DataGrid Classes="compact" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding BenchmarkResults}">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Длина" Binding="{Binding Length}" Width="52" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
+              <DataGridTextColumn Header="Алгоритм" Binding="{Binding Algorithm}" Width="*" MinWidth="112" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
+              <DataGridTextColumn Header="Время, мс" Binding="{Binding AvgMs, StringFormat=F2}" Width="84" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
+              <DataGridTextColumn Header="Минимум, мс" Binding="{Binding MinMs, StringFormat=F2}" Width="84" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
+              <DataGridTextColumn Header="Сравнения" Binding="{Binding Comparisons}" Width="88" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
+              <DataGridTextColumn Header="Операции" Binding="{Binding Moves}" Width="84" HeaderTemplate="{StaticResource GridHeaderTemplate}"/>
+            </DataGrid.Columns>
+          </DataGrid>
         </TabItem>
       </TabControl>
     </Border>

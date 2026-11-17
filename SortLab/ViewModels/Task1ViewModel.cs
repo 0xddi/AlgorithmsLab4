@@ -74,6 +74,8 @@ public partial class Task1ViewModel : ObservableObject
     [ObservableProperty]
     private bool _isPaused;
 
+    public int ArrayLength => _initialArray.Length;
+
     public bool CanStart => !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
     public bool CanStep => IsPaused || (!IsPlaying && !IsPaused);
@@ -138,6 +140,7 @@ public partial class Task1ViewModel : ObservableObject
     private void SetInitialArray(int[] arr)
     {
         _initialArray = arr;
+        OnPropertyChanged(nameof(ArrayLength));
         ResetInternal();
         Bars = arr.Select(v => new SortBar(v, StepMark.Normal)).ToList();
         Explanation = "Массив готов. Нажмите «Старт» или «Шаг».";
