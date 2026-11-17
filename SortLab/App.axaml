@@ -39,6 +39,48 @@
         </ResourceDictionary>
 
       </ResourceDictionary.ThemeDictionaries>
+      <DataTemplate x:Key="SortLegend">
+        <StackPanel Spacing="6">
+          <TextBlock Classes="h2" Text="Обозначения" Margin="0,0,0,4"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarNormalBrush}"/>
+            <TextBlock Text="Обычный"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarCompareBrush}"/>
+            <TextBlock Text="Сравнение"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarSwapBrush}"/>
+            <TextBlock Text="Перемещение"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarSortedBrush}"/>
+            <TextBlock Text="Упорядочено"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarPivotBrush}"/>
+            <TextBlock Text="Опорный / кандидат"/>
+          </StackPanel>
+        </StackPanel>
+      </DataTemplate>
+      <DataTemplate x:Key="TapeLegend">
+        <StackPanel Spacing="6">
+          <TextBlock Classes="h2" Text="Обозначения" Margin="0,0,0,4"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="10" Height="10" Fill="{DynamicResource ChipBgBrush}"/>
+            <TextBlock Text="Запись"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="10" Height="10" Fill="{DynamicResource HighlightBrush}"/>
+            <TextBlock Text="Сравнение"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="10" Height="10" Fill="{DynamicResource OkBrush}"/>
+            <TextBlock Text="Запись на ленту"/>
+          </StackPanel>
+        </StackPanel>
+      </DataTemplate>
 
       <!-- Отключаем резерв 32px под иконку сортировки в шапках колонок DataGrid:
            колонки у нас не сортируются, а резерв съедал место у заголовков -->

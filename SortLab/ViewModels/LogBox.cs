@@ -44,6 +44,16 @@ public partial class LogBox : ObservableObject
             FilteredEntries.Add(entry);
     }
 
+    public void RemoveStep(int step)
+    {
+        if (_all.Count == 0 || _all[^1].Step != step) return;
+        var entry = _all[^1];
+        _all.RemoveAt(_all.Count - 1);
+        if (FilteredEntries.Count > 0 && FilteredEntries[^1] == entry)
+            FilteredEntries.RemoveAt(FilteredEntries.Count - 1);
+        UpdateCount();
+    }
+
     public void Clear()
     {
         _all.Clear();

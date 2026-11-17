@@ -1,18 +1,31 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:SortLab.Controls" x:Class="SortLab.Views.Task1View">
-  <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="12" MaxWidth="1160">
+  <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="12">
     <StackPanel HorizontalAlignment="Center" Spacing="6" Margin="0,15,0,12">
       <TextBlock Classes="subtle" HorizontalAlignment="Center" Text="Внутренняя сортировка" FontWeight="SemiBold"/>
       <TextBlock Classes="hero" Text="{Binding SelectedAlgorithm.Name}"/>
       <TextBlock Text="{Binding ProgressText}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource SubtleTextBrush}"/>
     </StackPanel>
-    <Border Grid.Row="1" Classes="scene">
-      <controls:SortVisualizer x:Name="Visualizer" DelayMs="{Binding DelayMs}" Bars="{Binding Bars}" ShowLabels="{Binding Settings.ShowValueLabels}" NormalBrush="{Binding Settings.BarNormalBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}" LabelBrush="{Binding Settings.LabelBrush}"/>
-    </Border>
-    <ScrollViewer Grid.Row="2" MaxHeight="82" HorizontalScrollBarVisibility="Disabled">
+    <controls:DetailButton x:Name="LegendButton" Classes="link" Content="Обозначения"
+                           HorizontalAlignment="Left" VerticalAlignment="Center">
+      <controls:DetailButton.Detail>
+        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SortLegend}"/>
+      </controls:DetailButton.Detail>
+    </controls:DetailButton>
+    <Grid Grid.Row="1">
+      <Grid x:Name="LegendRail" ColumnDefinitions="*,1160,*" IsVisible="False">
+        <Border HorizontalAlignment="Right" Margin="0,0,16,0" Padding="12,16" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource CardBorderBrush}">
+          <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SortLegend}"/>
+        </Border>
+      </Grid>
+      <Border MaxWidth="1160" Classes="scene">
+        <controls:SortVisualizer x:Name="Visualizer" DelayMs="{Binding DelayMs}" Bars="{Binding Bars}" ShowLabels="{Binding Settings.ShowValueLabels}" NormalBrush="{Binding Settings.BarNormalBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}" LabelBrush="{Binding Settings.LabelBrush}"/>
+      </Border>
+    </Grid>
+    <ScrollViewer MaxWidth="1160" Grid.Row="2" MaxHeight="82" HorizontalScrollBarVisibility="Disabled">
       <TextBlock Text="{Binding Explanation}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" TextAlignment="Center" Margin="6"/>
     </ScrollViewer>
     <controls:PlaybackControls Grid.Row="3" Margin="0,0,0,10"/>
-    <Border Grid.Row="4" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardBorderBrush}" Padding="0,8,0,0">
+    <Border MaxWidth="1160" Grid.Row="4" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardBorderBrush}" Padding="0,8,0,0">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
         <TextBlock VerticalAlignment="Center" Text="{Binding ArrayLength, StringFormat='Элементов: {0}'}"/>
         <controls:DetailButton Classes="link" Content="Изменить массив">
@@ -45,7 +58,7 @@
         </controls:DetailButton>
         <controls:DetailButton Classes="link" Content="Алгоритм">
           <controls:DetailButton.Detail>
-            <Grid ColumnDefinitions="*,*" Width="640" ColumnSpacing="24" VerticalAlignment="Top">
+            <Grid ColumnDefinitions="5*,3*" Width="810" ColumnSpacing="24" VerticalAlignment="Top">
               <StackPanel Grid.Column="0" Spacing="8">
                 <ComboBox ItemsSource="{Binding Algorithms}" SelectedItem="{Binding SelectedAlgorithm}" HorizontalAlignment="Stretch">
                   <ComboBox.ItemTemplate>
@@ -55,35 +68,17 @@
                   </ComboBox.ItemTemplate>
                 </ComboBox>
                 <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <TextBlock Text="Как работает алгоритм" Classes="h2"/>
+                <TextBlock Text="{Binding AlgorithmDescription}" TextWrapping="Wrap" Classes="subtle"/>
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="8">
-                <TextBlock Text="Описание и статистика" TextWrapping="Wrap" Classes="h2"/>
-                <TextBlock Text="{Binding AlgorithmDescription}" TextWrapping="Wrap" Classes="subtle"/>
+                <TextBlock Text="Статистика" Classes="h2"/>
                 <StackPanel Spacing="3">
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarNormalBrush}"/>
-                    <TextBlock Text="Обычный элемент"/>
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarCompareBrush}"/>
-                    <TextBlock Text="Сравнение"/>
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarSwapBrush}"/>
-                    <TextBlock Text="Перестановка"/>
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarSortedBrush}"/>
-                    <TextBlock Text="Отсортировано"/>
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Ellipse Width="10" Height="10" Fill="{Binding Settings.BarPivotBrush}"/>
-                    <TextBlock Text="Опорный элемент"/>
-                  </StackPanel>
                   <TextBlock Text="{Binding ProgressText}" FontWeight="SemiBold"/>
                   <TextBlock Text="{Binding Comparisons, StringFormat='Сравнений: {0}'}"/>
                   <TextBlock Text="{Binding Swaps, StringFormat='Перестановок: {0}'}"/>
                   <TextBlock Text="{Binding Assignments, StringFormat='Присваиваний: {0}'}"/>
+                  <TextBlock Text="Сравнение проверяет порядок двух значений. Перестановка меняет два элемента местами. Присваивание сохраняет одно значение, например при сдвиге во вставках." TextWrapping="Wrap" Classes="subtle"/>
                   <TextBlock Text="{Binding SilentRunText}" Classes="subtle" TextWrapping="Wrap"/>
                 </StackPanel>
               </StackPanel>

@@ -6,7 +6,12 @@ namespace SortLab.Algorithms.Internal;
 public sealed class InsertionSort : ISortAlgorithm
 {
     public string Name => "Вставками (Insertion Sort)";
-    public string Description => "Квадратичный алгоритм: берём число и вставляем его на нужное место в отсортированной части слева.";
+    public string Description =>
+        """
+        Представьте ряд карт, уже разложенных по возрастанию. Берём следующее число и запоминаем его: это ключ. Идём от него влево. Пока сосед больше ключа, копируем соседа на одну клетку вправо. Вставляем ключ в освободившуюся клетку. Упорядоченная часть выросла на один элемент.
+
+        Пример: в ряду [2, 7, 9, 5] первые три числа уже по порядку. Запоминаем 5, сдвигаем 9 и 7, останавливаемся у 2. Получаем [2, 5, 7, 9]. Здесь два сдвига, хотя ни одна пара не обменивалась местами.
+        """;
 
     public IEnumerable<SortStep> GetSteps(int[] input) => Run(new SortCtx(input));
 
@@ -30,6 +35,7 @@ public sealed class InsertionSort : ISortAlgorithm
                     c.Mark(j, StepMark.Normal);
                     c.Mark(j + 1, StepMark.Swap);
                     yield return c.S(SortOpType.Assign, j + 1, j, $"{c.A[j + 1]} больше {key} — сдвигаем {c.A[j + 1]} на одну клетку вправо.");
+                    c.Mark(j + 1, StepMark.Normal);
                     j--;
                 }
                 else
@@ -40,7 +46,7 @@ public sealed class InsertionSort : ISortAlgorithm
             }
             c.A[j + 1] = key;
             c.MarkRange(0, i, StepMark.Sorted);
-            yield return c.S(SortOpType.Assign, j + 1, -1, $"Вставляем {key} на позицию {j + 1}. Числа слева снова по порядку!");
+            yield return c.S(SortOpType.Assign, j + 1, -1, $"Вставляем {key} на позицию {j + 2}. Числа слева снова по порядку!");
         }
         c.MarkAll(StepMark.Sorted);
         yield return c.S(SortOpType.Info, -1, -1, "Готово! Все числа выстроены по возрастанию.");
@@ -51,7 +57,12 @@ public sealed class InsertionSort : ISortAlgorithm
 public sealed class ShellSort : ISortAlgorithm
 {
     public string Name => "Шелла (Shell Sort)";
-    public string Description => "Улучшение вставок: сначала сравниваем далёкие числа (большой шаг), потом всё ближе.";
+    public string Description =>
+        """
+        Шаг — расстояние между позициями. При шаге 4 позиции 1, 5, 9 образуют одну цепочку, а 2, 6, 10 — другую. Внутри каждой цепочки делаем сортировку вставками: запоминаем очередное число и сдвигаем большие числа вправо на целый шаг.
+
+        Для восьми чисел шаги равны 4, 2 и 1: каждый раз делим шаг пополам и отбрасываем остаток. Если на позициях 1 и 5 стоят 9 и 2, число 2 сразу проходит четыре позиции влево. При шаге 1 все числа входят в одну цепочку — последний проход упорядочивает весь массив.
+        """;
 
     public IEnumerable<SortStep> GetSteps(int[] input) => Run(new SortCtx(input));
 
@@ -77,6 +88,7 @@ public sealed class ShellSort : ISortAlgorithm
                         c.Mark(j - gap, StepMark.Normal);
                         c.Mark(j, StepMark.Swap);
                         yield return c.S(SortOpType.Assign, j, j - gap, $"{c.A[j]} больше {key} — сдвигаем {c.A[j]} на {gap} клеток вправо.");
+                        c.Mark(j, StepMark.Normal);
                         j -= gap;
                     }
                     else
@@ -86,8 +98,9 @@ public sealed class ShellSort : ISortAlgorithm
                     }
                 }
                 c.A[j] = key;
+                c.Mark(j, StepMark.Swap);
+                yield return c.S(SortOpType.Assign, j, -1, $"Кладём {key} на позицию {j + 1}.");
                 c.Mark(j, StepMark.Normal);
-                yield return c.S(SortOpType.Assign, j, -1, $"Кладём {key} на позицию {j}.");
             }
             gap /= 2;
         }
@@ -100,7 +113,12 @@ public sealed class ShellSort : ISortAlgorithm
 public sealed class SelectionSort : ISortAlgorithm
 {
     public string Name => "Выбором (Selection Sort)";
-    public string Description => "Квадратичный алгоритм: находим самое маленькое из оставшихся чисел и ставим его в конец отсортированной части.";
+    public string Description =>
+        """
+        Слева накапливаются числа, уже стоящие на окончательных местах. На оставшемся участке считаем первое число кандидатом в минимумы. Сравниваем с ним каждое следующее число и запоминаем позицию нового кандидата, если нашли меньшее.
+
+        В [5, 3, 1, 4] кандидаты сменяются так: 5 → 3 → 1. Только после просмотра всех четырёх чисел меняем 5 и 1 местами. На первом проходе получаем три сравнения и один обмен. Если минимум уже стоит в начале участка, обмен пропускаем.
+        """;
 
     public IEnumerable<SortStep> GetSteps(int[] input) => Run(new SortCtx(input));
 
@@ -111,7 +129,7 @@ public sealed class SelectionSort : ISortAlgorithm
         {
             int min = i;
             c.Mark(min, StepMark.Pivot);
-            yield return c.S(SortOpType.Info, i, -1, $"Ищем самое маленькое число на участке [{i}..{c.N - 1}]. Пока кандидат — {c.A[min]} (жёлто-фиолетовая подсветка).");
+            yield return c.S(SortOpType.Info, i, -1, $"Ищем самое маленькое число на участке от позиции {i + 1} до {c.N}. Пока кандидат — {c.A[min]}.");
             for (int j = i + 1; j < c.N; j++)
             {
                 c.Mark(j, StepMark.Compare);
@@ -133,11 +151,11 @@ public sealed class SelectionSort : ISortAlgorithm
                 c.Swap(i, min);
                 c.Mark(i, StepMark.Swap);
                 c.Mark(min, StepMark.Swap);
-                yield return c.S(SortOpType.Swap, i, min, $"Ставим самое маленькое число на позицию {i}: меняем местами {c.A[i]} и {c.A[min]}.");
+                yield return c.S(SortOpType.Swap, i, min, $"Ставим самое маленькое число на позицию {i + 1}: меняем местами {c.A[i]} и {c.A[min]}.");
                 c.Mark(min, StepMark.Normal);
             }
             c.Mark(i, StepMark.Sorted);
-            yield return c.S(SortOpType.MarkSorted, i, -1, $"Позиция {i} занята: {c.A[i]} — самое маленькое из оставшихся.");
+            yield return c.S(SortOpType.MarkSorted, i, -1, $"Позиция {i + 1} занята: {c.A[i]} — самое маленькое из оставшихся.");
         }
         c.MarkAll(StepMark.Sorted);
         yield return c.S(SortOpType.Info, -1, -1, "Готово! Все числа выстроены по возрастанию.");
@@ -148,7 +166,12 @@ public sealed class SelectionSort : ISortAlgorithm
 public sealed class ImprovedBubbleSort : ISortAlgorithm
 {
     public string Name => "Пузырьковая сортировка";
-    public string Description => "Соседние числа меняем местами, если они перепутаны; хвост после последнего обмена сразу считаем готовым.";
+    public string Description =>
+        """
+        Проход — движение слева направо по ещё не готовой части массива. Сравниваем соседей. Если левое число больше, меняем пару местами. Так большое число может за один проход несколько раз сдвинуться вправо.
+
+        В [3, 2, 1, 4] меняем 3 с 2, затем 3 с 1. Пара 3 и 4 уже по порядку. Получаем [2, 1, 3, 4]. Дальше проверяем только 2 и 1: начиная с правой позиции последнего обмена хвост уже готов. Проход без обменов завершает сортировку.
+        """;
 
     public IEnumerable<SortStep> GetSteps(int[] input) => Run(new SortCtx(input));
 
@@ -185,7 +208,7 @@ public sealed class ImprovedBubbleSort : ISortAlgorithm
             }
             // Всё правее последнего обмена уже точно на своих местах.
             c.MarkRange(newLast + 1, c.N - 1, StepMark.Sorted);
-            yield return c.S(SortOpType.MarkSorted, newLast + 1, -1, $"После позиции {newLast} обменов больше не было — эта часть уже отсортирована.");
+            yield return c.S(SortOpType.MarkSorted, newLast + 1, -1, $"С позиции {newLast + 2} до конца числа уже на своих местах.");
             last = newLast;
         }
         c.MarkAll(StepMark.Sorted);

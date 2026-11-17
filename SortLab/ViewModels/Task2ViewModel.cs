@@ -13,7 +13,7 @@ public partial class Task2ViewModel : ObservableObject
     private readonly CsvService _csv;
     private readonly PlaybackEngine _engine = new();
     private CancellationTokenSource? _cts;
-    private IEnumerator<ExternalSortStep>? _enumerator;
+    private StepCursor<ExternalSortStep>? _enumerator;
     private RecordComparer? _comparer;
     private IReadOnlyList<TableRecord>? _sortedRows;
     private bool _finished;
@@ -91,6 +91,9 @@ public partial class Task2ViewModel : ObservableObject
     public IReadOnlyList<string> FilterOptions =>
         new[] { "(без фильтра)" }.Concat(Table?.Headers ?? Enumerable.Empty<string>()).ToArray();
 
+    public string AlgorithmDescription => (uint)SelectedSorterIndex < (uint)_sorters.Count
+        ? _sorters[SelectedSorterIndex].Description : string.Empty;
+
     public bool IsMultiway => _sorters.Count > 0 && _sorters[Math.Clamp(SelectedSorterIndex, 0, _sorters.Count - 1)].NeedsK;
 
     [ObservableProperty]
@@ -128,12 +131,14 @@ public partial class Task2ViewModel : ObservableObject
 
     public bool CanStart => Table is not null && SelectedKeyColumn is not null && !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
+    public bool CanStepBack => !IsPlaying && _currentStepNo > 0;
     public bool CanStep => !IsPlaying && (CanStart || _enumerator is not null);
 
     partial void OnSelectedSorterIndexChanged(int value)
     {
         OnPropertyChanged(nameof(IsMultiway));
-        NotifyCanStart();
+        OnPropertyChanged(nameof(AlgorithmDescription));
+        ResetRun();
     }
 
     partial void OnTableChanged(CsvTable? value)
@@ -143,12 +148,18 @@ public partial class Task2ViewModel : ObservableObject
         FilterColumnIndex = 0;
     }
 
-    partial void OnSelectedKeyColumnChanged(string? value) => NotifyCanStart();
+    partial void OnSelectedKeyColumnChanged(string? value) => ResetRun();
+    partial void OnSelectedKeyTypeIndexChanged(int value) => ResetRun();
+    partial void OnSelectedDirectionIndexChanged(int value) => ResetRun();
+    partial void OnMultiwayKChanged(int value) => ResetRun();
+    partial void OnFilterColumnIndexChanged(int value) => ResetRun();
+    partial void OnFilterValueChanged(string value) => ResetRun();
 
     private void NotifyCanStart()
     {
         OnPropertyChanged(nameof(CanStart));
         OnPropertyChanged(nameof(CanStep));
+        OnPropertyChanged(nameof(CanStepBack));
     }
 
     partial void OnDelayMsChanged(double value) => _engine.DelayMs = (int)Math.Clamp(value, 0, 2000);
@@ -339,7 +350,7 @@ public partial class Task2ViewModel : ObservableObject
         _comparer = cmp;
         var sorter = _sorters[Math.Clamp(SelectedSorterIndex, 0, _sorters.Count - 1)];
         if (sorter is MultiwayMergeSorter multi) multi.K = Math.Clamp(MultiwayK, 2, 8);
-        _enumerator = sorter.GetSteps(working, cmp).GetEnumerator();
+        _enumerator = new(sorter.GetSteps(working, cmp), 16);
         return true;
     }
 
@@ -363,6 +374,41 @@ public partial class Task2ViewModel : ObservableObject
         IsPlaying = true;
         OnPropertyChanged(nameof(CanPause));
         NotifyCanStart();
+    }
+
+    [RelayCommand]
+    private void StepBack()
+    {
+        if (!CanStepBack || _enumerator is null) return;
+        if (_currentStepNo == 1)
+        {
+            ResetRun();
+            return;
+        }
+        var op = _enumerator.Current.Op;
+        try
+        {
+            _enumerator.MoveBack();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ResetRun();
+            StatusMessage = "Ошибка временного файла сортировки: " + ex.Message;
+            return;
+        }
+        Log.RemoveStep(_currentStepNo--);
+        _finished = false;
+        if (op == SortOpType.Compare) Comparisons--;
+        if (op is SortOpType.Swap or SortOpType.Assign) Moves--;
+        var step = _enumerator.Current;
+        _pendingVisual = step;
+        PublishVisual();
+        Explanation = step.Explanation;
+        PhaseText = step.Phase;
+        _sortedRows = step.Result;
+        ResultTable = null;
+        HasResult = false;
+        ResultInfo = "";
     }
 
     [RelayCommand]
@@ -398,11 +444,10 @@ public partial class Task2ViewModel : ObservableObject
         if (_enumerator!.MoveNext())
         {
             _currentStepNo++;
+            if (_currentStepNo == 1) OnPropertyChanged(nameof(CanStepBack));
             ApplyStep(_enumerator.Current);
             return true;
         }
-        _enumerator.Dispose();
-        _enumerator = null;
         _finished = true;
         _engine.Resume();
         Finish();

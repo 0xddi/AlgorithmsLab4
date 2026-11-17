@@ -14,7 +14,7 @@ public partial class Task1ViewModel : ObservableObject
     private readonly IReadOnlyList<ISortAlgorithm> _algorithms;
     private readonly PlaybackEngine _engine = new();
     private CancellationTokenSource? _cts;
-    private IEnumerator<SortStep>? _enumerator;
+    private StepCursor<SortStep>? _enumerator;
     private int[] _initialArray = [];
     private readonly Random _random = new();
     private readonly Stopwatch _playClock = Stopwatch.StartNew();
@@ -78,6 +78,7 @@ public partial class Task1ViewModel : ObservableObject
 
     public bool CanStart => !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
+    public bool CanStepBack => !IsPlaying && _currentStepNo > 0;
     public bool CanStep => IsPaused || (!IsPlaying && !IsPaused);
 
     public Task1ViewModel(IReadOnlyList<ISortAlgorithm> algorithms, SettingsViewModel settings)
@@ -102,6 +103,7 @@ public partial class Task1ViewModel : ObservableObject
         OnPropertyChanged(nameof(CanStart));
         OnPropertyChanged(nameof(CanPause));
         OnPropertyChanged(nameof(CanStep));
+        OnPropertyChanged(nameof(CanStepBack));
     }
 
     // ---------- Данные ----------
@@ -173,7 +175,7 @@ public partial class Task1ViewModel : ObservableObject
             ResetInternal();
         }
         if (_enumerator is null && _initialArray.Length > 0)
-            _enumerator = SelectedAlgorithm.GetSteps(_initialArray).GetEnumerator();
+            _enumerator = new(SelectedAlgorithm.GetSteps(_initialArray));
         if (_enumerator is null) return;
         _cts = new CancellationTokenSource();
         IsPaused = false;
@@ -203,6 +205,32 @@ public partial class Task1ViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void StepBack()
+    {
+        if (!CanStepBack || _enumerator is null) return;
+        if (_currentStepNo == 1)
+        {
+            ResetInternal();
+            Bars = _initialArray.Select(v => new SortBar(v, StepMark.Normal)).ToList();
+            Explanation = "Массив готов. Нажмите «Старт» или «Шаг».";
+            ProgressText = "";
+            return;
+        }
+        var op = _enumerator.Current.Op;
+        _enumerator.MoveBack();
+        Log.RemoveStep(_currentStepNo--);
+        _finished = false;
+        if (op == SortOpType.Compare) Comparisons--;
+        if (op == SortOpType.Swap) Swaps--;
+        if (op == SortOpType.Assign) Assignments--;
+        var step = _enumerator.Current;
+        _pendingVisual = step;
+        PublishVisual();
+        Explanation = step.Explanation;
+        ProgressText = $"Шаг {_currentStepNo} из {_totalSteps}";
+    }
+
+    [RelayCommand]
     private void Step()
     {
         if (IsPlaying) return;
@@ -211,7 +239,7 @@ public partial class Task1ViewModel : ObservableObject
             ResetInternal();
         }
         if (_enumerator is null && _initialArray.Length > 0)
-            _enumerator = SelectedAlgorithm.GetSteps(_initialArray).GetEnumerator();
+            _enumerator = new(SelectedAlgorithm.GetSteps(_initialArray));
         if (_enumerator is null) return;
         Advance();
     }
@@ -222,11 +250,10 @@ public partial class Task1ViewModel : ObservableObject
         if (_enumerator.MoveNext())
         {
             _currentStepNo++;
+            if (_currentStepNo == 1) OnPropertyChanged(nameof(CanStepBack));
             ApplyStep(_enumerator.Current);
             return true;
         }
-        _enumerator.Dispose();
-        _enumerator = null;
         _finished = true;
         IsPlaying = false;
         IsPaused = false;

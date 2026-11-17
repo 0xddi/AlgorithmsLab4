@@ -27,13 +27,13 @@
         </ListBox>
       </Grid>
     </Border>
-    <Grid Margin="30,18" MaxWidth="1320">
+    <Grid Margin="30,18">
       <Carousel SelectedIndex="{Binding #Navigation.SelectedIndex, Mode=OneWay}" PageTransition="{x:Null}">
         <views:Task1View Classes="page" DataContext="{Binding Task1}"/>
         <views:Task2View Classes="page" DataContext="{Binding Task2}"/>
         <views:Task3View Classes="page" DataContext="{Binding Task3}"/>
-        <views:BenchmarkView Classes="page" DataContext="{Binding Task3}"/>
-        <views:SettingsView Classes="page" DataContext="{Binding Settings}"/>
+        <views:BenchmarkView MaxWidth="1320" Classes="page" DataContext="{Binding Task3}"/>
+        <views:SettingsView MaxWidth="1320" Classes="page" DataContext="{Binding Settings}"/>
       </Carousel>
     </Grid>
   </DockPanel>

@@ -1,11 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:SortLab.Controls" x:Class="SortLab.Controls.PlaybackControls">
-  <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="10" HorizontalAlignment="Center">
+  <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" HorizontalAlignment="Center">
     <Panel>
       <Button Padding="18,8" MinHeight="40" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="primary" ToolTip.Tip="Alt + P" Content="Старт" IsVisible="{Binding !IsPlaying}" IsEnabled="{Binding CanStart}" x:Name="StartButton" Command="{Binding StartCommand}"/>
       <Button Padding="18,8" MinHeight="40" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="primary" ToolTip.Tip="Alt + P" Content="Пауза" IsVisible="{Binding CanPause}" x:Name="PauseButton" Command="{Binding PauseCommand}"/>
       <Button Padding="18,8" MinHeight="40" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="primary" ToolTip.Tip="Alt + P" Content="Продолжить" IsVisible="{Binding IsPaused}" x:Name="ContinueButton" Command="{Binding ContinueCommand}"/>
     </Panel>
-    <Button Padding="18,8" MinHeight="40" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Grid.Column="1" Classes="secondary" Content="Шаг вперёд →" ToolTip.Tip="Alt + →" x:Name="StepButton" Command="{Binding StepCommand}" IsEnabled="{Binding CanStep}"/>
-    <Button Padding="18,8" MinHeight="40" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Grid.Column="2" Classes="secondary" Content="Сначала" Command="{Binding ResetCommand}"/>
+    <Button Padding="18,8" MinHeight="40" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Grid.Column="1" Classes="secondary" Content="← Шаг назад" ToolTip.Tip="Alt + ←" x:Name="BackButton" Command="{Binding StepBackCommand}" IsEnabled="{Binding CanStepBack}"/>
+    <Button Padding="18,8" MinHeight="40" Grid.Column="2" Classes="secondary" Content="Шаг вперёд →" ToolTip.Tip="Alt + →" x:Name="StepButton" Command="{Binding StepCommand}" IsEnabled="{Binding CanStep}"/>
+    <Button Padding="18,8" MinHeight="40" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Grid.Column="3" Classes="secondary" Content="Сначала" Command="{Binding ResetCommand}"/>
   </Grid>
 </UserControl>

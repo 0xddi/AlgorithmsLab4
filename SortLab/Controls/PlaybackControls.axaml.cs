@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 
 namespace SortLab.Controls;
 
@@ -9,9 +10,9 @@ public partial class PlaybackControls : UserControl
         InitializeComponent();
     }
 
-    public bool TryExecute(bool step)
+    public bool TryExecute(Key key)
     {
-        var button = step ? StepButton : ContinueButton.IsVisible ? ContinueButton
+        var button = key == Key.Left ? BackButton : key == Key.Right ? StepButton : ContinueButton.IsVisible ? ContinueButton
             : PauseButton.IsVisible ? PauseButton : StartButton;
         if (!button.IsEnabled || button.Command?.CanExecute(null) != true)
             return false;
