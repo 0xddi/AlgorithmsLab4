@@ -22,6 +22,8 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _showValueLabels = true;
 
+    [ObservableProperty] private double _movementPercent;
+
     // Кисти для кастомных визуализаторов (пересчитываются при смене темы/схемы).
     [ObservableProperty] private IBrush _barNormalBrush = new SolidColorBrush(Color.Parse("#4F6EF7"));
     [ObservableProperty] private IBrush _barCompareBrush = new SolidColorBrush(Color.Parse("#FFB300"));
@@ -43,16 +45,22 @@ public partial class SettingsViewModel : ObservableObject
         _darkTheme = settings.DarkTheme;
         _colorSchemeIndex = settings.ColorSchemeIndex;
         _showValueLabels = settings.ShowValueLabels;
+        _movementPercent = Math.Clamp(settings.MovementPercent ??
+            (settings.MoveDurationMs is { } duration
+                ? 100 * duration / Math.Max(1, settings.DefaultDelayMs)
+                : 80), 0, 100);
         UpdateBrushes();
     }
 
     public AppSettings ToSettings() => new()
     {
+        MovementPercent = MovementPercent,
         DarkTheme = DarkTheme,
         ColorSchemeIndex = ColorSchemeIndex,
         ShowValueLabels = ShowValueLabels,
     };
 
+    partial void OnMovementPercentChanged(double value) => _service.Save(ToSettings());
     partial void OnDarkThemeChanged(bool value) => OnAnyChanged();
     partial void OnColorSchemeIndexChanged(int value) => OnAnyChanged();
     partial void OnShowValueLabelsChanged(bool value) => OnAnyChanged();

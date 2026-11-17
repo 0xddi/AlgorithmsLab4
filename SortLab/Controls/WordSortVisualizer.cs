@@ -14,7 +14,6 @@ namespace SortLab.Controls;
 /// </summary>
 public class WordSortVisualizer : Control
 {
-    private const int AnimMs = 180;   // длительность анимации перестановки
     private const double GapX = 6, GapY = 6, PadX = 9, PadY = 3;
 
     static WordSortVisualizer()
@@ -67,16 +66,14 @@ public class WordSortVisualizer : Control
     public IBrush? SortedBrush { get => GetValue(SortedBrushProperty); set => SetValue(SortedBrushProperty, value); }
     public IBrush? PivotBrush { get => GetValue(PivotBrushProperty); set => SetValue(PivotBrushProperty, value); }
 
-    // Состояние анимации: два слота, чипы которых едут навстречу друг другу.
-    public static readonly StyledProperty<double> DelayMsProperty =
-        AvaloniaProperty.Register<WordSortVisualizer, double>(nameof(DelayMs), 150);
-    public double DelayMs { get => GetValue(DelayMsProperty); set => SetValue(DelayMsProperty, value); }
+    public static readonly StyledProperty<double> MoveDurationMsProperty =
+        AvaloniaProperty.Register<WordSortVisualizer, double>(nameof(MoveDurationMs), 250);
+    public double MoveDurationMs { get => GetValue(MoveDurationMsProperty); set => SetValue(MoveDurationMsProperty, value); }
 
-    private Point _fromA, _fromB;
+    private Point[] _origins = [];
     private double _duration;
     private readonly Dictionary<(string Text, IBrush Foreground), FormattedText> _labels = new();
     private static readonly Typeface LabelTypeface = new("Inter, Segoe UI");
-    private int _animA = -1, _animB = -1;
     private double _animT = 1;
     private long _animStart;
     private DispatcherTimer? _timer;
@@ -95,7 +92,7 @@ public class WordSortVisualizer : Control
         base.OnPropertyChanged(change);
         if (change.Property == WordsProperty) OnWordsChanged(change.GetOldValue<IReadOnlyList<WordChipVm>?>());
         else if (change.Property == TextBrushProperty) _labels.Clear();
-        else if (change.Property == DelayMsProperty && DelayMs <= 0) { StopAnim(); InvalidateVisual(); }
+        else if (change.Property == MoveDurationMsProperty && MoveDurationMs <= 0) { StopAnim(); InvalidateVisual(); }
         else if (change.Property == MessageProperty) InvalidateVisual();
     }
 
@@ -112,23 +109,12 @@ public class WordSortVisualizer : Control
         var next = Words;
         if (previous is not null && next is not null && previous.Count == next.Count)
         {
-            int first = -1, second = -1, count = 0;
-            for (int i = 0; i < next.Count; i++)
+            var sources = MovementSources.Match(previous, next, chip => chip.Text);
+            if (sources is null) return;
+            if (MoveDurationMs > 0 && _layoutCount == next.Count)
             {
-                if (next[i].Text == previous[i].Text) continue;
-                if (++count == 1) first = i;
-                else if (count == 2) second = i;
-                else break;
-            }
-            if (count == 0) return;
-            if (count == 2 && DelayMs > 0 && _layoutCount == next.Count
-                && previous[first].Text == next[second].Text && previous[second].Text == next[first].Text)
-            {
-                var fromA = CurrentPosition(second);
-                var fromB = CurrentPosition(first);
-                _fromA = fromA;
-                _fromB = fromB;
-                StartAnim(first, second);
+                _origins = sources.Select(CurrentPosition).ToArray();
+                StartAnim();
                 InvalidateLayout();
                 return;
             }
@@ -141,8 +127,8 @@ public class WordSortVisualizer : Control
     private Point CurrentPosition(int index)
     {
         var target = new Point(_xs[index], _ys[index]);
-        if (_animT >= 1 || (index != _animA && index != _animB)) return target;
-        var from = index == _animA ? _fromA : _fromB;
+        if (_animT >= 1) return target;
+        var from = _origins[index];
         double t = Ease(_animT);
         return new Point(Lerp(from.X, target.X, t), Lerp(from.Y, target.Y, t));
     }
@@ -157,14 +143,11 @@ public class WordSortVisualizer : Control
     {
         _timer?.Stop();
         _animT = 1;
-        _animA = _animB = -1;
     }
 
-    private void StartAnim(int a, int b)
+    private void StartAnim()
     {
-        _animA = a;
-        _animB = b;
-        _duration = Math.Min(AnimMs, DelayMs);
+        _duration = MoveDurationMs;
         _animT = 0;
         _animStart = Stopwatch.GetTimestamp();
         if (_timer is null)

@@ -23,7 +23,13 @@
             <Panel>
               <TextBlock Classes="subtle" IsVisible="{Binding !Tapes.Count}" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" Text="Серии появятся после первого шага сортировки."/>
               <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding Tapes}">
+                <controls:TapeItemsControl ItemsSource="{Binding Tapes}">
+                  <controls:TapeItemsControl.MoveDurationMs>
+                    <MultiBinding Converter="{StaticResource StepDuration}">
+                      <Binding Path="DelayMs"/>
+                      <Binding Path="Settings.MovementPercent"/>
+                    </MultiBinding>
+                  </controls:TapeItemsControl.MoveDurationMs>
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                       <StackPanel Spacing="8"/>
@@ -42,7 +48,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                               <DataTemplate>
-                                <Border Background="{DynamicResource ChipBgBrush}" CornerRadius="6" Padding="4" Margin="2">
+                                <Border Padding="4" Margin="2">
                                   <ItemsControl ItemsSource="{Binding Chips}">
                                     <ItemsControl.ItemsPanel>
                                       <ItemsPanelTemplate>
@@ -65,7 +71,7 @@
                       </Border>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                </controls:TapeItemsControl>
               </ScrollViewer>
             </Panel>
           </TabItem>

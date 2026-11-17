@@ -18,7 +18,14 @@
         </Border>
       </Grid>
       <Border MaxWidth="1160" Classes="scene">
-        <controls:SortVisualizer x:Name="Visualizer" DelayMs="{Binding DelayMs}" Bars="{Binding Bars}" ShowLabels="{Binding Settings.ShowValueLabels}" NormalBrush="{Binding Settings.BarNormalBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}" LabelBrush="{Binding Settings.LabelBrush}"/>
+        <controls:SortVisualizer x:Name="Visualizer" Bars="{Binding Bars}" ShowLabels="{Binding Settings.ShowValueLabels}" NormalBrush="{Binding Settings.BarNormalBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}" LabelBrush="{Binding Settings.LabelBrush}">
+          <controls:SortVisualizer.MoveDurationMs>
+            <MultiBinding Converter="{StaticResource StepDuration}">
+              <Binding Path="DelayMs"/>
+              <Binding Path="Settings.MovementPercent"/>
+            </MultiBinding>
+          </controls:SortVisualizer.MoveDurationMs>
+        </controls:SortVisualizer>
       </Border>
     </Grid>
     <ScrollViewer MaxWidth="1160" Grid.Row="2" MaxHeight="82" HorizontalScrollBarVisibility="Disabled">
