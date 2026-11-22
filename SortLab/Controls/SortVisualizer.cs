@@ -17,7 +17,7 @@ public class SortVisualizer : Control
     {
         AffectsRender<SortVisualizer>(BarsProperty, ShowLabelsProperty,
             NormalBrushProperty, CompareBrushProperty, SwapBrushProperty, SortedBrushProperty,
-            PivotBrushProperty, LabelBrushProperty, ShellGapProperty);
+            PivotBrushProperty, LabelBrushProperty, ShellGapProperty, ActiveCallProperty);
     }
 
     public static readonly StyledProperty<IReadOnlyList<SortBar>?> BarsProperty =
@@ -46,6 +46,10 @@ public class SortVisualizer : Control
     public static readonly StyledProperty<int> ShellGapProperty =
         AvaloniaProperty.Register<SortVisualizer, int>(nameof(ShellGap));
     public int ShellGap { get => GetValue(ShellGapProperty); set => SetValue(ShellGapProperty, value); }
+
+    public static readonly StyledProperty<RangeFrame?> ActiveCallProperty =
+        AvaloniaProperty.Register<SortVisualizer, RangeFrame?>(nameof(ActiveCall));
+    public RangeFrame? ActiveCall { get => GetValue(ActiveCallProperty); set => SetValue(ActiveCallProperty, value); }
 
     public IReadOnlyList<SortBar>? Bars
     {
@@ -167,6 +171,16 @@ public class SortVisualizer : Control
             max = Math.Max(max, value);
         }
         double plotHeight = Math.Max(1, bounds.Height - topPad - bottomPad - labelSpace);
+
+        if (ActiveCall is { } call)
+        {
+            var range = new Rect((call.Start - 1) * slotWidth, 4, (call.End - call.Start + 1) * slotWidth,
+                topPad + labelSpace + plotHeight - 4);
+            var ink = LabelBrush ?? Brushes.Gray;
+            using (context.PushOpacity(0.10))
+                context.DrawRectangle(ink, null, range);
+            context.DrawLine(new Pen(ink, 2), range.TopLeft, range.TopRight);
+        }
 
         double fontSize = Math.Clamp(barW * 0.6, 7, 16);
 

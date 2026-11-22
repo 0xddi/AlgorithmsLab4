@@ -30,10 +30,12 @@ public partial class Task1ViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CompareLegend))]
     [NotifyPropertyChangedFor(nameof(PivotLegend))]
     [NotifyPropertyChangedFor(nameof(IsHeapSort))]
+    [NotifyPropertyChangedFor(nameof(IsQuickSort))]
     private ISortAlgorithm _selectedAlgorithm;
 
     public string AlgorithmDescription => SelectedAlgorithm.Description;
     public bool IsHeapSort => SelectedAlgorithm is HeapSort;
+    public bool IsQuickSort => SelectedAlgorithm is QuickSort;
     public string CompareLegend => SelectedAlgorithm is HeapSort ? "Ребёнок" : "Сравнение";
     public string PivotLegend => SelectedAlgorithm is HeapSort ? "Родитель" : "Опорный / кандидат";
 
@@ -55,6 +57,9 @@ public partial class Task1ViewModel : ObservableObject
     [ObservableProperty] private IReadOnlyList<SortBar> _heapNodes = [];
     [ObservableProperty] private string _stepDetail = "";
     [ObservableProperty] private int _shellGap;
+    [ObservableProperty] private RangeFrame? _activeCall;
+    [ObservableProperty] private IReadOnlyList<RangeCard> _callCards = [];
+    [ObservableProperty] private string _callStatus = "";
 
     private static string DescribeHeap(HeapFrame frame, int[] values)
     {
@@ -305,7 +310,10 @@ public partial class Task1ViewModel : ObservableObject
         HeapVariables = IsHeapSort ? DescribeHeap(new HeapFrame(ArrayLength), _initialArray) : "";
         HeapNodes = IsHeapSort ? _initialArray.Select(value => new SortBar(value, StepMark.Normal)).ToArray() : [];
         ShellGap = 0;
-        StepDetail = SelectedAlgorithm is QuickSort ? "Стек вызовов пуст." : "";
+        StepDetail = "";
+        ActiveCall = null;
+        CallCards = [];
+        CallStatus = "При запуске здесь появится первый участок.";
         _currentStepNo = 0;
         _finished = false;
         Comparisons = 0;
@@ -339,12 +347,20 @@ public partial class Task1ViewModel : ObservableObject
                 && (i == step.IndexA || i == step.IndexB))).ToList();
         if (step.Heap is { } frame) HeapNodes = Bars.Take(frame.Size).ToArray();
         ShellGap = step.Gap;
-        if (SelectedAlgorithm is QuickSort)
+        if (IsQuickSort)
         {
-            var lines = new List<string>();
-            for (var call = step.Call; call is not null; call = call.Caller)
-                lines.Add($"{(lines.Count == 0 ? "Активный" : "Ожидает возврата")}: позиции {call.Start}–{call.End}");
-            StepDetail = lines.Count == 0 ? "Стек вызовов пуст." : "Стек вызовов (сверху вниз)\n" + string.Join("\n", lines);
+            if (ActiveCall != step.Call)
+            {
+                ActiveCall = step.Call;
+                var cards = new List<RangeCard>();
+                for (var call = step.Call; call is not null; call = call.Caller)
+                {
+                    bool current = cards.Count == 0;
+                    cards.Add(new RangeCard(current ? call.Status : "Ждёт", call.Start, call.End, call.Detail, current));
+                }
+                CallCards = cards;
+            }
+            CallStatus = step.Call is null ? "Весь массив отсортирован." : "";
         }
         else
         {

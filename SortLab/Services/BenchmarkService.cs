@@ -1,68 +1,79 @@
 using System.Diagnostics;
-using Avalonia.Threading;
 using SortLab.Algorithms.Strings;
 using SortLab.Models;
 
 namespace SortLab.Services;
 
-/// <summary>Сервис экспериментов: генерация текстов, замер времени сортировки, сбор статистики.</summary>
+public enum BenchmarkInputOrder { Random, Ascending, Descending }
+
+/// <summary>Замеры времени и операций строковых сортировок.</summary>
 public sealed class BenchmarkService
 {
-    /// <summary>
-    /// Прогнать все алгоритмы на текстах заданных длин. Выполняется в фоне; прогресс
-    /// отдаётся через callback, который обязан маршалить обновления на UI-поток.
-    /// </summary>
-    public async Task<List<BenchmarkResult>> RunAsync(
-        int[] lengths, IStringSortAlgorithm[] algorithms, int runs,
+    public Task<List<BenchmarkResult>> RunAsync(
+        int[] lengths, IStringSortAlgorithm[] algorithms, int runs, BenchmarkInputOrder order, int seed,
         Action<int, string> progress, CancellationToken ct)
     {
-        return await Task.Run(async () =>
+        return Task.Run(() =>
         {
             var results = new List<BenchmarkResult>();
-            int total = lengths.Length * algorithms.Length;
+            var random = new Random(seed);
+            int total = lengths.Length * algorithms.Length * runs;
             int done = 0;
+            int reportedPercent = -1;
 
-            foreach (var len in lengths)
+            foreach (int length in lengths)
             {
-                var words = TextProcessor.SplitWords(TextGenerator.GenerateText(len), ignoreCase: true);
-                foreach (var algo in algorithms)
+                var samples = algorithms.Select(_ => new List<(double Ms, long Comparisons, long Moves)>(runs)).ToArray();
+                for (int run = 0; run < runs; run++)
                 {
                     ct.ThrowIfCancellationRequested();
-                    progress(done, $"Длина {len}: {algo.Name}...");
-                    var times = new List<double>();
-                    long cmp = 0, moves = 0;
-                    for (int run = 0; run < runs; run++)
+                    string[] words = TextProcessor.SplitWords(TextGenerator.GenerateText(length, random), ignoreCase: true);
+                    if (order != BenchmarkInputOrder.Random)
+                        Array.Sort(words, StringComparer.Ordinal);
+                    if (order == BenchmarkInputOrder.Descending)
+                        Array.Reverse(words);
+
+                    for (int i = 0; i < algorithms.Length; i++)
                     {
                         ct.ThrowIfCancellationRequested();
-                        var sw = Stopwatch.StartNew();
-                        cmp = 0;
-                        moves = 0;
-                        // snapshots=false: без снимков массива на каждый шаг — быстро и без лишней памяти.
-                        foreach (var step in algo.GetSteps(words, snapshots: false))
+                        var algorithm = algorithms[i];
+                        int percentage = done * 100 / total;
+                        if (percentage != reportedPercent)
                         {
-                            switch (step.Op)
-                            {
-                                case SortOpType.Compare: cmp++; break;
-                                case SortOpType.Swap:
-                                case SortOpType.Assign: moves++; break;
-                            }
+                            progress(percentage, $"{length} слов · {algorithm.Name} · прогон {run + 1}/{runs}");
+                            reportedPercent = percentage;
+                        }
+
+                        long comparisons = 0, moves = 0;
+                        int steps = 0;
+                        var sw = Stopwatch.StartNew();
+                        foreach (var step in algorithm.GetSteps(words, snapshots: false))
+                        {
+                            if (step.Op == SortOpType.Compare) comparisons++;
+                            if (step.Op is SortOpType.Swap or SortOpType.Assign) moves++;
+                            if (++steps % 256 == 0) ct.ThrowIfCancellationRequested();
                         }
                         sw.Stop();
-                        times.Add(sw.Elapsed.TotalMilliseconds);
+                        samples[i].Add((sw.Elapsed.TotalMilliseconds, comparisons, moves));
+                        done++;
                     }
+                }
+
+                for (int i = 0; i < algorithms.Length; i++)
+                {
+                    var runsForAlgorithm = samples[i];
                     results.Add(new BenchmarkResult
                     {
-                        Length = len,
-                        Algorithm = algo.Name,
-                        AvgMs = times.Average(),
-                        MinMs = times.Min(),
-                        Comparisons = cmp,
-                        Moves = moves,
+                        Length = length,
+                        Algorithm = algorithms[i].Name,
+                        AvgMs = runsForAlgorithm.Average(s => s.Ms),
+                        MinMs = runsForAlgorithm.Min(s => s.Ms),
+                        Comparisons = runsForAlgorithm.Average(s => s.Comparisons),
+                        Moves = runsForAlgorithm.Average(s => s.Moves),
                     });
-                    done++;
-                    progress(done * 100 / Math.Max(1, total), $"Готово: {algo.Name}, длина {len}");
                 }
             }
+            ct.ThrowIfCancellationRequested();
             return results;
         }, ct);
     }

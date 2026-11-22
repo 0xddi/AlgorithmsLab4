@@ -36,5 +36,8 @@ public sealed class StepItemsControl : TapeItemsControl
                 int range = text.IndexOf("позиции ", StringComparison.Ordinal);
                 yield return (line, "стек", range < 0 ? text : text[range..], true);
             }
+        foreach (var card in this.GetVisualDescendants().OfType<Border>())
+            if (card.Classes.Contains("rangeCard") && card.DataContext is RangeCard rangeCard)
+                yield return (card, "участок", $"{rangeCard.Start}:{rangeCard.End}", true);
     }
 }

@@ -60,16 +60,15 @@ public static class TextGenerator
         "happy","sad","kind","brave","calm","smart","quick","bright","dark","light","heavy","soft","hard","warm","cold",
     };
 
-    private static readonly Random Rng = new();
-
     /// <summary>Сгенерировать текст из n слов (частые слова встречаются чаще — как в настоящем тексте).</summary>
-    public static string GenerateText(int n)
+    public static string GenerateText(int n, Random? random = null)
     {
+        random ??= Random.Shared;
         var sb = new System.Text.StringBuilder(n * 8);
         for (int i = 0; i < n; i++)
         {
             // Квадрат случайного числа смещает выбор к началу словаря (частые слова).
-            double r = Rng.NextDouble();
+            double r = random.NextDouble();
             int idx = (int)(r * r * Dictionary.Length);
             if (idx >= Dictionary.Length) idx = Dictionary.Length - 1;
             sb.Append(Dictionary[idx]);

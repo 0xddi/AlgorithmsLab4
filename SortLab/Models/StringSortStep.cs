@@ -8,7 +8,7 @@ public sealed record StringSortStep(
     int IndexA,
     int IndexB,
     string Explanation,
-    string WorkStack = "",
+    IReadOnlyList<RangeCard>? WorkCards = null,
     string DetailTitle = "",
     IReadOnlyList<WordLane>? Lanes = null);
 
@@ -44,8 +44,8 @@ public sealed class BenchmarkResult
     public string Algorithm { get; init; } = "";
     public double AvgMs { get; init; }
     public double MinMs { get; init; }
-    public long Comparisons { get; init; }
-    public long Moves { get; init; }
+    public double Comparisons { get; init; }
+    public double Moves { get; init; }
 }
 
 /// <summary>Серия для диаграмм: имя + значения по категориям.</summary>

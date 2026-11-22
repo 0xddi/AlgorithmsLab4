@@ -19,7 +19,7 @@
       </Grid>
       <Border Grid.Column="1" Classes="scene">
         <Grid RowDefinitions="*,Auto" RowSpacing="6">
-        <controls:SortVisualizer x:Name="Visualizer" Bars="{Binding Bars}" ShellGap="{Binding ShellGap}" ShowLabels="{Binding Settings.ShowValueLabels}" NormalBrush="{Binding Settings.BarNormalBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}" LabelBrush="{Binding Settings.LabelBrush}">
+        <controls:SortVisualizer x:Name="Visualizer" Bars="{Binding Bars}" ActiveCall="{Binding ActiveCall}" ShellGap="{Binding ShellGap}" ShowLabels="{Binding Settings.ShowValueLabels}" NormalBrush="{Binding Settings.BarNormalBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}" LabelBrush="{Binding Settings.LabelBrush}">
           <controls:SortVisualizer.MoveDurationMs>
             <MultiBinding Converter="{StaticResource StepDuration}">
               <Binding Path="DelayMs"/>
@@ -41,6 +41,14 @@
               BorderThickness="1,0,0,0" BorderBrush="{DynamicResource CardBorderBrush}" IsVisible="{Binding !IsHeapSort}">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="8">
+            <StackPanel Spacing="5" IsVisible="{Binding IsQuickSort}">
+              <TextBlock Classes="h2" Text="Стек вызовов"/>
+              <TextBlock Classes="subtle" Text="Верхняя карточка показывает текущий участок. Ниже видно, куда вернёмся." TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding CallStatus}" TextWrapping="Wrap"
+                         IsVisible="{Binding CallStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+              <controls:StepItemsControl ItemsSource="{Binding CallCards}" ItemTemplate="{StaticResource RangeCardTemplate}"
+                                         MoveDurationMs="{Binding #Visualizer.MoveDurationMs}"/>
+            </StackPanel>
             <controls:StepItemsControl Lines="{Binding StepDetail}" ItemTemplate="{StaticResource StackLine}" MoveDurationMs="{Binding #Visualizer.MoveDurationMs}"
                        IsVisible="{Binding StepDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <TextBlock Classes="h2" Text="Правила алгоритма"/>

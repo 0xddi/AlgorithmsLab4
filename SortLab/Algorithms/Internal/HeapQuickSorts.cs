@@ -141,11 +141,13 @@ public sealed class QuickSort : ISortAlgorithm
         if (l == r)
         {
             c.Mark(l, StepMark.Sorted);
-            yield return c.S(SortOpType.Info, l, -1, $"На позиции {l + 1} остался один элемент. Возвращаемся из вызова.") with { Call = call };
+            yield return c.S(SortOpType.Info, l, -1, $"На позиции {l + 1} остался один элемент. Возвращаемся из вызова.")
+                with { Call = call with { Detail = $"Здесь только число {c.A[l]}. Участок готов." } };
             yield break;
         }
 
         int pivot = c.A[r];
+        call = call with { Detail = $"Разделяем участок вокруг опорного числа {pivot}." };
         c.Mark(r, StepMark.Pivot);
         yield return c.S(SortOpType.Info, r, -1, $"Берём позиции с {l + 1} по {r + 1}. Опорное число — последнее на этом участке: {pivot}. В начале участка собираем числа строго меньше опорного.") with { Call = call };
 
@@ -179,10 +181,26 @@ public sealed class QuickSort : ISortAlgorithm
         }
         c.Mark(r, StepMark.Normal);
         c.Mark(p, StepMark.Sorted);
-        yield return c.S(SortOpType.MarkSorted, p, -1, $"Опорное {c.A[p]} встало на позицию {p + 1}: в этом участке перед ним {p - l} меньших чисел, после него {r - p} чисел больше или равны ему.") with { Call = call };
+        bool hasLeft = l < p;
+        bool hasRight = p < r;
+        string right = p + 1 == r ? $"позиция {r + 1}" : $"позиции {p + 2}–{r + 1}";
+        string next = hasLeft ? "Сначала сортируем часть слева от опорного." : "Слева пусто. Переходим к правой части.";
+        yield return c.S(SortOpType.MarkSorted, p, -1, $"Опорное {c.A[p]} встало на позицию {p + 1}: в этом участке перед ним {p - l} меньших чисел, после него {r - p} чисел больше или равны ему. {next}")
+            with { Call = call with { Detail = next } };
 
-        foreach (var s in Quick(c, l, p - 1, call)) yield return s;
-        foreach (var s in Quick(c, p + 1, r, call)) yield return s;
-        yield return c.S(SortOpType.Info, -1, -1, $"Участок {l + 1}–{r + 1} готов. Возвращаемся из вызова.") with { Call = call };
+        if (hasLeft)
+        {
+            string afterLeft = hasRight ? $"После левой части → {right}." : "Правая часть пуста. После возврата участок будет готов.";
+            foreach (var s in Quick(c, l, p - 1, call with { Detail = afterLeft })) yield return s;
+            if (hasRight)
+                yield return c.S(SortOpType.Info, -1, -1, $"Левая часть готова. Возвращаемся к участку {l + 1}–{r + 1} и переходим к правой части.")
+                    with { Call = call with { Status = "Продолжаем", Detail = $"Левая часть готова. Дальше → {right}." } };
+        }
+
+        if (hasRight)
+            foreach (var s in Quick(c, p + 1, r, call with { Detail = "После правой части участок будет готов." })) yield return s;
+
+        yield return c.S(SortOpType.Info, -1, -1, $"Снова на участке {l + 1}–{r + 1}. Он готов. {(caller is null ? "Завершаем сортировку." : "Возвращаемся к предыдущему участку.")}")
+            with { Call = call with { Status = "Продолжаем", Detail = "Работа на этом участке закончена." } };
     }
 }

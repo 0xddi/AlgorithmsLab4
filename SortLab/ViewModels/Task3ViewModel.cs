@@ -13,7 +13,6 @@ public partial class Task3ViewModel : ObservableObject
 {
     private const int VisualCap = 300; // для наглядности визуализируем не более 300 слов
 
-    private readonly IReadOnlyList<IStringSortAlgorithm> _algorithms;
     private readonly BenchmarkService _benchmark;
     private readonly PlaybackEngine _engine = new();
     private CancellationTokenSource? _cts;
@@ -94,47 +93,84 @@ public partial class Task3ViewModel : ObservableObject
 
     // ---------- Эксперименты ----------
 
+    private const string DefaultBenchLengths = "100, 500, 1000, 2000, 5000";
+    public IReadOnlyList<BenchmarkAlgorithmChoice> BenchAlgorithms { get; }
+    public IReadOnlyList<BenchmarkInputChoice> BenchInputOrders { get; } =
+    [
+        new(BenchmarkInputOrder.Random, "Случайный"),
+        new(BenchmarkInputOrder.Ascending, "По возрастанию"),
+        new(BenchmarkInputOrder.Descending, "По убыванию"),
+    ];
+
     [ObservableProperty]
     private System.Collections.ObjectModel.ObservableCollection<BenchmarkResult> _benchmarkResults = new();
 
     [ObservableProperty]
-    private IReadOnlyList<string>? _chartCategories;
+    [NotifyPropertyChangedFor(nameof(HasBenchResults))]
+    private IReadOnlyList<string> _chartCategories = [];
+    public bool HasBenchResults => ChartCategories.Count > 0;
 
     [ObservableProperty]
     private IReadOnlyList<ChartSeriesData>? _chartSeries;
 
     [ObservableProperty]
-    private bool _hasBenchResults;
+    private string _benchResultSetup = "";
 
     [ObservableProperty]
     private double _benchProgress;
 
     [ObservableProperty]
-    private int _benchRuns = 3;
-
-    /// <summary>Своя длина текста для экспериментов (вводится пользователем).</summary>
-    [ObservableProperty]
-    private int _customBenchLength = 300;
-
-    /// <summary>Текущий набор длин для бенчмарка (стандартные + добавленные пользователем).</summary>
-    private List<int> _benchLengths = [100, 500, 1000, 2000, 5000];
-
-    public string BenchLengthsText => "Длины: " + string.Join(", ", _benchLengths) + " слов.";
+    [NotifyPropertyChangedFor(nameof(CanRunBench), nameof(BenchSetupHint))]
+    private int? _benchRuns = 3;
 
     [ObservableProperty]
-    private string _benchStatus = "Эксперименты не запускались.";
+    [NotifyPropertyChangedFor(nameof(CanRunBench), nameof(BenchSetupHint), nameof(BenchLengthsError))]
+    private string _benchLengths = DefaultBenchLengths;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRunBench))]
+    private BenchmarkInputChoice? _benchInput;
+
+    [ObservableProperty]
+    private int? _benchSeed;
+
+    public string BenchLengthsError => ReadBenchLengths(out _);
+    public string BenchSetupHint
+    {
+        get
+        {
+            int algorithms = BenchAlgorithms.Count(a => a.IsSelected);
+            if (algorithms == 0) return "Выберите хотя бы один алгоритм.";
+            if (BenchRuns is not (>= 1 and <= 20)) return "Укажите от 1 до 20 прогонов.";
+            if (ReadBenchLengths(out var lengths).Length > 0) return "";
+            int total = algorithms * lengths.Length * BenchRuns.Value;
+            return $"{algorithms} × {lengths.Length} × {BenchRuns} = {total} {RunsWord(total)}";
+        }
+    }
+
+    [ObservableProperty]
+    private string _benchStatus = "Замеры ещё не запускались.";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRunBench))]
     private bool _benchRunning;
 
-    public bool CanRunBench => !BenchRunning;
+    public bool CanRunBench => !BenchRunning && BenchRuns is >= 1 and <= 20 && BenchInput is not null
+        && BenchAlgorithms.Any(a => a.IsSelected) && BenchLengthsError.Length == 0;
 
     public Task3ViewModel(IReadOnlyList<IStringSortAlgorithm> algorithms, BenchmarkService benchmark, SettingsViewModel settings)
     {
-        _algorithms = algorithms;
         _benchmark = benchmark;
         Settings = settings;
         Algorithms = algorithms.Select(a => (ISortAlgorithmOption)new AlgorithmOption(a)).ToList();
+        BenchAlgorithms = algorithms.Select(a => new BenchmarkAlgorithmChoice(a)).ToArray();
+        foreach (var choice in BenchAlgorithms)
+            choice.PropertyChanged += (_, _) =>
+            {
+                OnPropertyChanged(nameof(CanRunBench));
+                OnPropertyChanged(nameof(BenchSetupHint));
+            };
+        _benchInput = BenchInputOrders[0];
         _selectedAlgorithm = Algorithms[0];
         InputText = "birch apple elm apple birch apple";
         ApplyText();
@@ -220,7 +256,8 @@ public partial class Task3ViewModel : ObservableObject
         _enumerator = null;
         _pendingVisual = null;
         _currentStepNo = 0;
-        WorkStack = "";
+        WorkCards = [];
+        WordWorkStatus = "При запуске здесь появится первый участок.";
         DetailTitle = "";
         DetailLanes = [];
         HasStepDetail = false;
@@ -365,7 +402,11 @@ public partial class Task3ViewModel : ObservableObject
     // При быстром прогоне журнал получает каждую операцию, а сцена — последний шаг кадра.
     private StringSortStep? _pendingVisual;
 
-    [ObservableProperty] private string _workStack = "";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ActiveWordRange))]
+    private IReadOnlyList<RangeCard> _workCards = [];
+    [ObservableProperty] private string _wordWorkStatus = "";
+    public RangeCard? ActiveWordRange => WorkCards.Count > 0 && WorkCards[0].IsCurrent ? WorkCards[0] : null;
     [ObservableProperty] private string _detailTitle = "";
     [ObservableProperty] private IReadOnlyList<WordLane> _detailLanes = [];
     [ObservableProperty] private bool _hasStepDetail;
@@ -374,7 +415,8 @@ public partial class Task3ViewModel : ObservableObject
     {
         if (_pendingVisual is not { } step) return;
         _pendingVisual = null;
-        WorkStack = step.WorkStack;
+        WorkCards = step.WorkCards ?? [];
+        WordWorkStatus = WorkCards.Count == 0 ? "Все слова отсортированы." : "";
         DetailTitle = step.DetailTitle;
         DetailLanes = step.Lanes ?? [];
         HasStepDetail = DetailLanes.Count > 0;
@@ -409,83 +451,73 @@ public partial class Task3ViewModel : ObservableObject
 
     // ---------- Эксперименты ----------
 
-    [RelayCommand]
-    private void AddBenchLength()
+    private string ReadBenchLengths(out int[] lengths)
     {
-        int len = Math.Clamp(CustomBenchLength, 50, 50000);
-        if (len != CustomBenchLength)
+        lengths = [];
+        if (string.IsNullOrWhiteSpace(BenchLengths)) return "Укажите хотя бы один объём.";
+
+        var values = new SortedSet<int>();
+        foreach (string part in BenchLengths.Split(',', StringSplitOptions.TrimEntries))
         {
-            CustomBenchLength = len;
-            StatusMessage = "Длина должна быть от 50 до 50000 слов.";
-            return;
+            if (!int.TryParse(part, out int length) || length is < 50 or > 50000)
+                return "Введите целые числа от 50 до 50 000 через запятую.";
+            if (!values.Add(length))
+                return $"Объём {length} указан дважды.";
         }
-        StatusMessage = "";
-        if (_benchLengths.Contains(len))
-        {
-            BenchStatus = $"Длина {len} уже есть в списке.";
-            return;
-        }
-        _benchLengths.Add(len);
-        _benchLengths.Sort();
-        OnPropertyChanged(nameof(BenchLengthsText));
-        BenchStatus = $"Длина {len} добавлена — запустите эксперименты заново.";
+        lengths = values.ToArray();
+        return "";
     }
 
     [RelayCommand]
-    private void ResetBenchLengths()
-    {
-        _benchLengths = [100, 500, 1000, 2000, 5000];
-        OnPropertyChanged(nameof(BenchLengthsText));
-        BenchStatus = "Длины возвращены к стандартным (100, 500, 1000, 2000, 5000).";
-    }
+    private void ResetBenchLengths() => BenchLengths = DefaultBenchLengths;
 
     [RelayCommand]
     private async Task RunBenchmarkAsync()
     {
-        if (BenchRunning) return;
+        if (!CanRunBench || BenchRuns is not int runs || BenchInput is not { } input) return;
+        ReadBenchLengths(out int[] lengths);
+        var algos = BenchAlgorithms.Where(a => a.IsSelected).Select(a => a.Algorithm).ToArray();
+        int seed = BenchSeed ?? Random.Shared.Next();
         BenchRunning = true;
-        HasBenchResults = false;
-        OnPropertyChanged(nameof(CanRunBench));
-        _benchmarkCancellation = new CancellationTokenSource();
+        BenchProgress = 0;
+        BenchStatus = "Готовим данные для замеров...";
+        using var cancellation = new CancellationTokenSource();
+        _benchmarkCancellation = cancellation;
         try
         {
-            int[] lengths = _benchLengths.ToArray();
-            var algos = _algorithms.ToArray();
-            int runs = Math.Clamp(BenchRuns, 1, 20);
-            BenchProgress = 0;
-            var results = await _benchmark.RunAsync(lengths, algos, runs: runs,
+            var results = await _benchmark.RunAsync(lengths, algos, runs, input.Order, seed,
                 // Прогресс приходит из фонового потока — маршалим на UI-поток, иначе краш.
                 (pct, msg) => Dispatcher.UIThread.Post(() =>
                 {
+                    if (_benchmarkCancellation != cancellation || cancellation.IsCancellationRequested) return;
                     BenchProgress = pct;
                     BenchStatus = msg;
-                }), _benchmarkCancellation.Token);
+                }), cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
 
             BenchmarkResults = new(results);
             ChartCategories = lengths.Select(l => l.ToString()).ToList();
-            ChartSeries = algos.Select((a, i) => new ChartSeriesData(a.Name,
-                    lengths.Select(l => results.Where(r => r.Length == l && r.Algorithm == a.Name)
-                        .Select(r => r.AvgMs).FirstOrDefault())
-                        .ToList()))
-                .ToList();
-            HasBenchResults = true;
+            ChartSeries = results.GroupBy(r => r.Algorithm)
+                .Select(group => new ChartSeriesData(group.Key, group.Select(r => r.AvgMs).ToArray()))
+                .ToArray();
+            BenchResultSetup = $"Порядок слов: {input.Name.ToLowerInvariant()} · начальное число: {seed} · {runs} {RunsWord(runs)} на объём и алгоритм";
             BenchProgress = 100;
-            BenchStatus = $"Эксперименты завершены: {results.Count} замеров, по {runs} {RunsWord(runs)} на каждый.";
+            BenchStatus = $"Замеры завершены. Выполнено прогонов: {results.Count * runs}.";
         }
         catch (OperationCanceledException)
         {
-            BenchStatus = "Эксперименты отменены.";
+            BenchStatus = BenchmarkResults.Count > 0
+                ? "Замеры отменены. Показаны результаты предыдущего запуска."
+                : "Замеры отменены.";
         }
         catch (Exception ex)
         {
-            BenchStatus = "Ошибка экспериментов: " + ex.Message;
+            BenchStatus = "Ошибка замеров: " + ex.Message;
         }
         finally
         {
-            _benchmarkCancellation.Dispose();
             _benchmarkCancellation = null;
             BenchRunning = false;
-            OnPropertyChanged(nameof(CanRunBench));
         }
     }
 
@@ -506,3 +538,11 @@ public partial class Task3ViewModel : ObservableObject
         return "прогонов";
     }
 }
+
+public sealed partial class BenchmarkAlgorithmChoice(IStringSortAlgorithm algorithm) : ObservableObject
+{
+    public IStringSortAlgorithm Algorithm { get; } = algorithm;
+    [ObservableProperty] private bool _isSelected = true;
+}
+
+public sealed record BenchmarkInputChoice(BenchmarkInputOrder Order, string Name);
