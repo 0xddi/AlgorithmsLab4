@@ -19,22 +19,24 @@ public class TapeItemsControl : ItemsControl
         set => SetValue(MoveDurationMsProperty, value);
     }
 
-    private readonly Dictionary<(string Tape, int Id), Point> _previous = new();
-    private readonly Dictionary<int, Point> _copies = new();
+    private readonly Dictionary<(string Lane, string Key), Point> _previous = new();
+    private readonly Dictionary<string, Point> _copies = new();
     private readonly List<(TranslateTransform Transform, Vector Offset)> _moves = new();
     private long _started;
     private double _duration;
     private bool _framePending;
 
-    private IEnumerable<(HighlightBorder Chip, string Tape, ChipVm Row)> Rows()
+    protected virtual IEnumerable<(Control Chip, string Lane, string Key, bool Enter)> Cells()
     {
         foreach (var chip in this.GetVisualDescendants().OfType<HighlightBorder>())
             if (chip.DataContext is ChipVm { RecordId: > 0 } row &&
                 chip.GetVisualAncestors().OfType<Control>().Select(c => c.DataContext)
                     .OfType<TapeState>().FirstOrDefault() is { } tape)
-                yield return (chip, tape.Name, row);
+                yield return (chip, tape.Name, row.RecordId.ToString(), row.IsMoved);
+        foreach (var title in this.GetVisualDescendants().OfType<TextBlock>())
+            if (title.DataContext is TapeState state && title.Text == state.Name)
+                yield return (title, "tape", state.Name, true);
     }
-
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         if (change.Property == ItemsSourceProperty && MoveDurationMs > 0)
@@ -43,11 +45,11 @@ public class TapeItemsControl : ItemsControl
             LayoutUpdated -= AnimateLayout;
             _previous.Clear();
             _copies.Clear();
-            foreach (var (chip, tape, row) in Rows())
+            foreach (var (chip, lane, key, enter) in Cells())
                 if (chip.TranslatePoint(default, this) is { } point)
                 {
-                    _previous[(tape, row.RecordId)] = point;
-                    _copies[row.RecordId] = point;
+                    _previous[(lane, key)] = point;
+                    _copies[key] = point;
                 }
             FinishMoves();
             _started = Stopwatch.GetTimestamp();
@@ -66,13 +68,13 @@ public class TapeItemsControl : ItemsControl
     {
         LayoutUpdated -= AnimateLayout;
         if (Stopwatch.GetElapsedTime(_started).TotalMilliseconds >= _duration) return;
-        foreach (var (chip, tape, row) in Rows())
+        foreach (var (chip, lane, key, enter) in Cells())
         {
             if (chip.TranslatePoint(default, this) is not { } target) continue;
-            if (!_previous.TryGetValue((tape, row.RecordId), out var origin) &&
-                !_copies.TryGetValue(row.RecordId, out origin))
+            if (!_previous.TryGetValue((lane, key), out var origin) &&
+                !_copies.TryGetValue(key, out origin))
             {
-                if (!row.IsMoved) continue;
+                if (!enter) continue;
                 origin = target - new Point(0, 12);
             }
             var offset = new Vector(origin.X - target.X, origin.Y - target.Y);

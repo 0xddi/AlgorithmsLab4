@@ -13,7 +13,7 @@ public sealed class ChipVm
 public sealed record SeriesBlock(IReadOnlyList<ChipVm> Chips);
 
 /// <summary>Состояние одной ленты (файла) на текущем шаге.</summary>
-public sealed record TapeState(string Name, IReadOnlyList<SeriesBlock> Series);
+public sealed record TapeState(string Name, IReadOnlyList<SeriesBlock> Series, string Role = "");
 
 /// <summary>Один шаг внешней сортировки: полные состояния лент + пояснение.</summary>
 public sealed record ExternalSortStep(
@@ -23,4 +23,6 @@ public sealed record ExternalSortStep(
     string Explanation,
     string LogIndices,
     string LogValues,
-    IReadOnlyList<TableRecord>? Result = null);
+    IReadOnlyList<TableRecord>? Result = null,
+    int InputTapes = 0,
+    int OutputTapes = 0);

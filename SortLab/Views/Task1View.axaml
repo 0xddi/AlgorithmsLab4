@@ -11,14 +11,15 @@
         <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SortLegend}"/>
       </controls:DetailButton.Detail>
     </controls:DetailButton>
-    <Grid Grid.Row="1">
-      <Grid x:Name="LegendRail" ColumnDefinitions="*,1160,*" IsVisible="False">
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto">
+      <Grid x:Name="LegendRail" IsVisible="False">
         <Border HorizontalAlignment="Right" Margin="0,0,16,0" Padding="12,16" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource CardBorderBrush}">
           <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SortLegend}"/>
         </Border>
       </Grid>
-      <Border MaxWidth="1160" Classes="scene">
-        <controls:SortVisualizer x:Name="Visualizer" Bars="{Binding Bars}" ShowLabels="{Binding Settings.ShowValueLabels}" NormalBrush="{Binding Settings.BarNormalBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}" LabelBrush="{Binding Settings.LabelBrush}">
+      <Border Grid.Column="1" Classes="scene">
+        <Grid RowDefinitions="*,Auto" RowSpacing="6">
+        <controls:SortVisualizer x:Name="Visualizer" Bars="{Binding Bars}" ShellGap="{Binding ShellGap}" ShowLabels="{Binding Settings.ShowValueLabels}" NormalBrush="{Binding Settings.BarNormalBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}" LabelBrush="{Binding Settings.LabelBrush}">
           <controls:SortVisualizer.MoveDurationMs>
             <MultiBinding Converter="{StaticResource StepDuration}">
               <Binding Path="DelayMs"/>
@@ -26,6 +27,44 @@
             </MultiBinding>
           </controls:SortVisualizer.MoveDurationMs>
         </controls:SortVisualizer>
+          <Grid Grid.Row="1" RowDefinitions="Auto,Auto" IsVisible="{Binding IsHeapSort}">
+            <TextBlock Classes="h2" Text="Дерево кучи · позиция: значение"/>
+            <TextBlock Grid.Row="1" Text="Куча пуста." Classes="subtle" IsVisible="{Binding !HeapNodes.Count}"/>
+            <ScrollViewer Grid.Row="1" MaxHeight="155" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                          IsVisible="{Binding HeapNodes.Count}">
+              <controls:HeapTree MoveDurationMs="{Binding #Visualizer.MoveDurationMs}" Nodes="{Binding HeapNodes}" Ink="{Binding Settings.LabelBrush}" ParentBrush="{Binding Settings.BarPivotBrush}" ChildBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}"/>
+            </ScrollViewer>
+          </Grid>
+        </Grid>
+      </Border>
+      <Border Grid.Column="2" Width="260" Margin="16,0,0,0" Padding="16,8,0,0"
+              BorderThickness="1,0,0,0" BorderBrush="{DynamicResource CardBorderBrush}" IsVisible="{Binding !IsHeapSort}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="8">
+            <controls:StepItemsControl Lines="{Binding StepDetail}" ItemTemplate="{StaticResource StackLine}" MoveDurationMs="{Binding #Visualizer.MoveDurationMs}"
+                       IsVisible="{Binding StepDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Classes="h2" Text="Правила алгоритма"/>
+            <TextBlock Text="{Binding SelectedAlgorithm.Reference}" TextWrapping="Wrap"/>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+      <Border Grid.Column="2" Width="260" Margin="16,0,0,0" Padding="16,8,0,0"
+              BorderThickness="1,0,0,0" BorderBrush="{DynamicResource CardBorderBrush}" IsVisible="{Binding IsHeapSort}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="6">
+            <TextBlock Classes="h2" Text="На этом шаге"/>
+            <TextBlock Text="{Binding HeapVariables}" TextWrapping="Wrap"/>
+            <TextBlock Classes="h2" Text="Позиции в куче"/>
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Номер под столбиком — позиция, число над ним — значение. Корень занимает позицию 1."/>
+            <TextBlock Text="Размер кучи — число активных элементов." TextWrapping="Wrap"/>
+            <TextBlock Text="Левый ребёнок: 2 × позиция родителя" TextWrapping="Wrap"/>
+            <TextBlock Text="Правый ребёнок: позиция левого ребёнка + 1" TextWrapping="Wrap"/>
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Детей записывают парами по уровням: у позиции 1 это 2 и 3, у позиции 2 — 4 и 5. Позиция больше размера кучи лежит вне кучи."/>
+            <TextBlock Text="Позиция родителя = целая часть (позиция ребёнка / 2)" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding SelectedAlgorithm.Reference}" TextWrapping="Wrap"/>
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Целая часть — результат деления с отброшенным остатком."/>
+          </StackPanel>
+        </ScrollViewer>
       </Border>
     </Grid>
     <ScrollViewer MaxWidth="1160" Grid.Row="2" MaxHeight="82" HorizontalScrollBarVisibility="Disabled">

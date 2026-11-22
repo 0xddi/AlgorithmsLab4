@@ -220,6 +220,10 @@ public partial class Task3ViewModel : ObservableObject
         _enumerator = null;
         _pendingVisual = null;
         _currentStepNo = 0;
+        WorkStack = "";
+        DetailTitle = "";
+        DetailLanes = [];
+        HasStepDetail = false;
         _finished = false;
         Comparisons = 0;
         Moves = 0;
@@ -361,10 +365,19 @@ public partial class Task3ViewModel : ObservableObject
     // При быстром прогоне журнал получает каждую операцию, а сцена — последний шаг кадра.
     private StringSortStep? _pendingVisual;
 
+    [ObservableProperty] private string _workStack = "";
+    [ObservableProperty] private string _detailTitle = "";
+    [ObservableProperty] private IReadOnlyList<WordLane> _detailLanes = [];
+    [ObservableProperty] private bool _hasStepDetail;
+
     private void PublishVisual()
     {
         if (_pendingVisual is not { } step) return;
         _pendingVisual = null;
+        WorkStack = step.WorkStack;
+        DetailTitle = step.DetailTitle;
+        DetailLanes = step.Lanes ?? [];
+        HasStepDetail = DetailLanes.Count > 0;
         if (_words.Length <= VisualCap)
             Chips = step.Values.Zip(step.Marks, (v, m) => new WordChipVm { Text = v, Mark = m }).ToList();
     }
@@ -378,8 +391,8 @@ public partial class Task3ViewModel : ObservableObject
         if (step.Op == SortOpType.Compare) Comparisons++;
         if (step.Op is SortOpType.Assign or SortOpType.Swap) Moves++;
         string indices = step.IndexA >= 0 && step.IndexB >= 0
-            ? $"{step.IndexA} ↔ {step.IndexB}"
-            : step.IndexA >= 0 ? $"{step.IndexA}" : "";
+            ? $"{step.IndexA + 1}, {step.IndexB + 1}"
+            : step.IndexA >= 0 ? $"{step.IndexA + 1}" : "";
         string values = step.IndexA >= 0 && step.IndexB >= 0
             ? $"«{step.Values[step.IndexA]}» ↔ «{step.Values[step.IndexB]}»"
             : step.IndexA >= 0 ? $"«{step.Values[step.IndexA]}»" : "";

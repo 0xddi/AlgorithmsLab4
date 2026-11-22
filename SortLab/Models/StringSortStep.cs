@@ -7,7 +7,21 @@ public sealed record StringSortStep(
     StepMark[] Marks,
     int IndexA,
     int IndexB,
-    string Explanation);
+    string Explanation,
+    string WorkStack = "",
+    string DetailTitle = "",
+    IReadOnlyList<WordLane>? Lanes = null);
+
+public sealed record WordLane(string Label, IReadOnlyList<WordCell> Cells)
+{
+    public static WordLane WithActiveLetter(string label, string word, int active)
+    {
+        var cells = word.Select((letter, i) => new WordCell(letter.ToString(), i == active)).ToList();
+        if (active == word.Length) cells.Add(new WordCell("конец слова", true));
+        return new WordLane(label, cells);
+    }
+}
+public sealed record WordCell(string Text, bool Active = false, int? SourceIndex = null);
 
 /// <summary>Чип со словом для визуализации.</summary>
 public sealed class WordChipVm

@@ -8,6 +8,7 @@ public abstract class ExternalSorterBase : IExternalSorter
 {
     public abstract string Name { get; }
     public abstract string Description { get; }
+    public abstract string Reference { get; }
     public virtual bool NeedsK => false;
     protected virtual int Paths => 2;
     protected virtual bool NaturalRuns => false;
@@ -23,6 +24,7 @@ public abstract class ExternalSorterBase : IExternalSorter
             var source = Files("A");
             var target = Files("B");
             var preview = new TapePreview(cmp);
+            preview.SetLanes([], source);
             int runs = 0;
             using (var tapes = OpenTapes(source, File.CreateText))
             {
@@ -32,8 +34,9 @@ public abstract class ExternalSorterBase : IExternalSorter
                     bool newRun = true;
                     if (NaturalRuns && previous is not null)
                     {
-                        yield return preview.Compare("Поиск серий", previous, row);
                         newRun = cmp.Compare(previous, row) > 0;
+                        yield return preview.Compare("Поиск серий", previous, row, newRun
+                            ? "Порядок нарушен, начинаем новую серию." : "Порядок сохраняется, продолжаем текущую серию.");
                     }
                     if (newRun)
                     {
@@ -42,7 +45,8 @@ public abstract class ExternalSorterBase : IExternalSorter
                     }
                     int lane = (runs - 1) % k;
                     tapes.Items[lane].WriteLine(JsonSerializer.Serialize(row));
-                    yield return preview.Move("Распределение", source[lane], runs, row);
+                    yield return preview.Move("Распределение", source[lane], runs, row, !NaturalRuns ? "Каждая исходная строка образует отдельную серию." : previous is null
+                        ? "Первая строка открывает серию." : newRun ? "Началась новая серия." : "Продолжаем ту же серию.");
                     previous = row;
                 }
                 if (runs > 0) tapes.Items[(runs - 1) % k].WriteLine();
@@ -51,6 +55,7 @@ public abstract class ExternalSorterBase : IExternalSorter
             for (int pass = 1; runs > 1; pass++)
             {
                 preview.Clear(target);
+                preview.SetLanes(source, target);
                 int merged = 0;
                 using (var readers = OpenTapes(source, File.OpenText))
                 using (var writers = OpenTapes(target, File.CreateText))
@@ -69,16 +74,20 @@ public abstract class ExternalSorterBase : IExternalSorter
                                 if (heads[i] is not { } candidate) continue;
                                 if (best >= 0)
                                 {
-                                    yield return preview.Compare(phase, heads[best]!, candidate,
+                                    int order = cmp.Compare(candidate, heads[best]);
+                                    string decision = order < 0 ? $"По выбранному порядку раньше идёт строка №{candidate.Id}, она становится кандидатом."
+                                        : order == 0 ? $"Ключи равны, сохраняем кандидата №{heads[best]!.Id}." : $"Кандидат №{heads[best]!.Id} идёт раньше, сохраняем его.";
+                                    yield return preview.Compare(phase, heads[best]!, candidate, decision,
                                         Path.GetFileName(source[best]), Path.GetFileName(source[i]));
-                                    if (cmp.Compare(candidate, heads[best]) >= 0) continue;
+                                    if (order >= 0) continue;
                                 }
                                 best = i;
                             }
                             if (best < 0) break;
                             var row = heads[best]!;
                             writers.Items[lane].WriteLine(JsonSerializer.Serialize(row));
-                            yield return preview.Move(phase, target[lane], merged + 1, row);
+                            yield return preview.Move(phase, target[lane], merged + 1, row,
+                                $"Строка с ленты {Path.GetFileName(source[best])} идёт первой по выбранному порядку среди первых непрочитанных строк серий.");
                             heads[best] = ReadRow(readers.Items[best]);
                         }
                         writers.Items[lane].WriteLine();
@@ -114,6 +123,14 @@ public abstract class ExternalSorterBase : IExternalSorter
     private sealed class TapePreview(RecordComparer cmp)
     {
         private readonly Dictionary<string, List<(int Run, List<TableRecord> Rows)>> _series = new();
+        private string[] _input = [];
+        private string[] _output = [];
+
+        public void SetLanes(string[] input, string[] output)
+        {
+            _input = input.Select(Path.GetFileName).ToArray()!;
+            _output = output.Select(Path.GetFileName).ToArray()!;
+        }
 
         public void Clear(IEnumerable<string> files)
         {
@@ -122,23 +139,31 @@ public abstract class ExternalSorterBase : IExternalSorter
 
         private List<TapeState> Snapshot(int? left = null, int? right = null, int? moved = null)
         {
-            return _series.Select(tape => new TapeState(tape.Key, tape.Value.Select(series =>
-                new SeriesBlock(series.Rows.Select(row => Chip(row, cmp,
-                    row.Id == left || row.Id == right, row.Id == moved)).ToList())).ToList())).ToList();
+            var tapes = new List<TapeState>();
+            foreach (var name in _input.Concat(_output))
+            {
+                var blocks = _series.TryGetValue(name, out var series)
+                    ? series.Select(block => new SeriesBlock(block.Rows.Select(row => Chip(row, cmp,
+                        row.Id == left || row.Id == right, row.Id == moved)).ToList())).ToList()
+                    : [];
+                tapes.Add(new TapeState(name, blocks, _input.Contains(name) ? "Входная" : "Выходная"));
+            }
+            return tapes;
         }
 
-        public ExternalSortStep Compare(string phase, TableRecord left, TableRecord right,
+        public ExternalSortStep Compare(string phase, TableRecord left, TableRecord right, string decision,
             string first = "Вход", string second = "Вход")
         {
             var tapes = Snapshot(left.Id, right.Id);
             tapes.Add(new TapeState($"Сравнение: {first} ↔ {second}", [new SeriesBlock(
                 [Chip(left, cmp, compare: true), Chip(right, cmp, compare: true)])]));
             return new(SortOpType.Compare, phase, tapes,
-                $"Сравниваем ключи «{cmp.KeyOf(left)}» и «{cmp.KeyOf(right)}» по выбранному порядку.",
-                $"№{left.Id} ↔ №{right.Id}", $"{cmp.KeyOf(left)} ↔ {cmp.KeyOf(right)}");
+                $"Столбец «{cmp.KeyColumn}», {(cmp.Descending ? "по убыванию" : "по возрастанию")}. У строки №{left.Id} ключ «{cmp.KeyOf(left)}», у строки №{right.Id} — «{cmp.KeyOf(right)}». {decision}",
+                $"№{left.Id} ↔ №{right.Id}", $"{cmp.KeyOf(left)} ↔ {cmp.KeyOf(right)}",
+                InputTapes: _input.Length, OutputTapes: _output.Length);
         }
 
-        public ExternalSortStep Move(string phase, string file, int run, TableRecord row)
+        public ExternalSortStep Move(string phase, string file, int run, TableRecord row, string reason)
         {
             string name = Path.GetFileName(file);
             if (!_series.TryGetValue(name, out var runs)) _series[name] = runs = [];
@@ -151,7 +176,8 @@ public abstract class ExternalSorterBase : IExternalSorter
             if (rows.Count == 24) rows.RemoveAt(0);
             rows.Add(row);
             return new(SortOpType.Assign, phase, Snapshot(moved: row.Id),
-                $"Записываем №{row.Id} в файл {name}, серия {run}.", $"№{row.Id} → {name}", cmp.KeyOf(row));
+                $"{reason} Записываем строку №{row.Id} с ключом «{cmp.KeyOf(row)}» на ленту {name} в серию №{run}.", $"№{row.Id} → {name}", cmp.KeyOf(row),
+                InputTapes: _input.Length, OutputTapes: _output.Length);
         }
     }
 
@@ -184,6 +210,7 @@ public abstract class ExternalSorterBase : IExternalSorter
 public sealed class DirectMergeSorter : ExternalSorterBase
 {
     public override string Name => "Прямое слияние";
+    public override string Reference => "Каждая строка начинает серию длины 1. За проход объединяем две серии; предельная длина серии удваивается.";
     public override string Description =>
         """
         Ключ — выбранное поле CSV, по которому сравниваем строки. Серия — последовательность строк, уже упорядоченных по ключу. Вначале каждая строка образует серию длины 1. Лента здесь означает временный файл, из которого строки читаются по порядку.
@@ -195,6 +222,7 @@ public sealed class DirectMergeSorter : ExternalSorterBase
 public sealed class NaturalMergeSorter : ExternalSorterBase
 {
     public override string Name => "Естественное слияние";
+    public override string Reference => "Серия продолжается, пока соседние ключи идут в выбранном порядке. Равенство сохраняет серию; нарушение порядка открывает следующую. За проход объединяем серии попарно.";
     public override string Description =>
         """
         Ключ — столбец, задающий порядок строк. Ищем естественные серии: это подряд идущие строки, которые уже стоят в нужном порядке. При сортировке по возрастанию новая серия начинается там, где следующий ключ меньше предыдущего. Равные ключи остаются вместе в серии.
@@ -210,6 +238,7 @@ public sealed class MultiwayMergeSorter : ExternalSorterBase
     public override bool NeedsK => true;
     protected override int Paths => Math.Clamp(K, 2, 8);
     public override string Name => "Многопутевое слияние";
+    public override string Reference => "Число путей задаёт, сколько серий объединяем одновременно. Начинаем с серий по одной строке. После каждой записи читаем следующую строку только с выбранного пути.";
     public override string Description =>
         """
         Путь — входной временный файл. Число k задаёт, сколько серий можно сливать одновременно. Серия — группа строк, уже упорядоченная по выбранному столбцу. Начинаем с серий по одной строке. Из каждой участвующей серии читаем первую ещё не взятую строку — её называют головой.

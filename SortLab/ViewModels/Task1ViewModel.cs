@@ -27,9 +27,15 @@ public partial class Task1ViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(AlgorithmDescription))]
+    [NotifyPropertyChangedFor(nameof(CompareLegend))]
+    [NotifyPropertyChangedFor(nameof(PivotLegend))]
+    [NotifyPropertyChangedFor(nameof(IsHeapSort))]
     private ISortAlgorithm _selectedAlgorithm;
 
     public string AlgorithmDescription => SelectedAlgorithm.Description;
+    public bool IsHeapSort => SelectedAlgorithm is HeapSort;
+    public string CompareLegend => SelectedAlgorithm is HeapSort ? "Ребёнок" : "Сравнение";
+    public string PivotLegend => SelectedAlgorithm is HeapSort ? "Родитель" : "Опорный / кандидат";
 
     [ObservableProperty]
     private int _arraySize = 8;
@@ -42,6 +48,24 @@ public partial class Task1ViewModel : ObservableObject
 
     [ObservableProperty]
     private IReadOnlyList<SortBar> _bars = [];
+
+    [ObservableProperty]
+    private string _heapVariables = "";
+
+    [ObservableProperty] private IReadOnlyList<SortBar> _heapNodes = [];
+    [ObservableProperty] private string _stepDetail = "";
+    [ObservableProperty] private int _shellGap;
+
+    private static string DescribeHeap(HeapFrame frame, int[] values)
+    {
+        string Position(int? position) => position switch
+        {
+            null => "—",
+            int i when i > frame.Size => $"{i} (вне кучи)",
+            int i => $"{i} (число {values[i - 1]})",
+        };
+        return $"Размер кучи: {frame.Size}\nРодитель: {Position(frame.Parent)}\nЛевый ребёнок: {Position(frame.Left)}\nПравый ребёнок: {Position(frame.Right)}";
+    }
 
     [ObservableProperty]
     private string _explanation = "Выберите алгоритм, задайте массив и нажмите «Старт» или «Шаг».";
@@ -278,6 +302,10 @@ public partial class Task1ViewModel : ObservableObject
         _enumerator?.Dispose();
         _enumerator = null;
         _pendingVisual = null;
+        HeapVariables = IsHeapSort ? DescribeHeap(new HeapFrame(ArrayLength), _initialArray) : "";
+        HeapNodes = IsHeapSort ? _initialArray.Select(value => new SortBar(value, StepMark.Normal)).ToArray() : [];
+        ShellGap = 0;
+        StepDetail = SelectedAlgorithm is QuickSort ? "Стек вызовов пуст." : "";
         _currentStepNo = 0;
         _finished = false;
         Comparisons = 0;
@@ -305,7 +333,24 @@ public partial class Task1ViewModel : ObservableObject
     {
         if (_pendingVisual is not { } step) return;
         _pendingVisual = null;
-        Bars = step.Marks.Zip(step.Values, (m, v) => new SortBar(v, m)).ToList();
+        if (step.Heap is { } heap) HeapVariables = DescribeHeap(heap, step.Values);
+        Bars = step.Values.Select((value, i) => new SortBar(value, step.Marks[i],
+            (step.Gap > 0 || step.Op == SortOpType.Compare && step.Marks[i] is (StepMark.HeapParent or StepMark.HeapChild))
+                && (i == step.IndexA || i == step.IndexB))).ToList();
+        if (step.Heap is { } frame) HeapNodes = Bars.Take(frame.Size).ToArray();
+        ShellGap = step.Gap;
+        if (SelectedAlgorithm is QuickSort)
+        {
+            var lines = new List<string>();
+            for (var call = step.Call; call is not null; call = call.Caller)
+                lines.Add($"{(lines.Count == 0 ? "Активный" : "Ожидает возврата")}: позиции {call.Start}–{call.End}");
+            StepDetail = lines.Count == 0 ? "Стек вызовов пуст." : "Стек вызовов (сверху вниз)\n" + string.Join("\n", lines);
+        }
+        else
+        {
+            StepDetail = step.Gap == 0 ? "" : step.IndexB < 0 ? $"Расстояние: {step.Gap}"
+                : $"Расстояние: {step.Gap}. Позиции {Math.Min(step.IndexA, step.IndexB) + 1} и {Math.Max(step.IndexA, step.IndexB) + 1}.";
+        }
     }
 
     private void ApplyStep(SortStep step)
@@ -317,8 +362,8 @@ public partial class Task1ViewModel : ObservableObject
         if (step.Op == SortOpType.Swap) Swaps++;
         if (step.Op == SortOpType.Assign) Assignments++;
         string indices = step.IndexA >= 0 && step.IndexB >= 0
-            ? $"{step.IndexA} ↔ {step.IndexB}"
-            : step.IndexA >= 0 ? $"{step.IndexA}" : "";
+            ? $"{step.IndexA + 1}, {step.IndexB + 1}"
+            : step.IndexA >= 0 ? $"{step.IndexA + 1}" : "";
         string values = step.IndexA >= 0 && step.IndexB >= 0
             ? $"{step.Values[step.IndexA]} ↔ {step.SavedKey ?? step.Values[step.IndexB]}"
             : step.IndexA >= 0 ? $"{step.Values[step.IndexA]}" : "";

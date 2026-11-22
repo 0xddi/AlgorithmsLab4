@@ -11,17 +11,17 @@
         <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SortLegend}"/>
       </controls:DetailButton.Detail>
     </controls:DetailButton>
-    <Grid Grid.Row="1">
-      <Grid x:Name="LegendRail" ColumnDefinitions="*,1160,*" IsVisible="False">
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto">
+      <Grid x:Name="LegendRail" IsVisible="False">
         <Border HorizontalAlignment="Right" Margin="0,0,16,0" Padding="12,16" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource CardBorderBrush}">
           <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SortLegend}"/>
         </Border>
       </Grid>
-      <Border MaxWidth="1160" Classes="scene">
+      <Border Grid.Column="1" Classes="scene">
         <Grid RowDefinitions="Auto,*,Auto,*" RowSpacing="6">
           <TextBlock Classes="h2" Text="Слова по порядку" TextWrapping="Wrap"/>
-          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" Background="Transparent">
-            <controls:WordSortVisualizer Words="{Binding Chips}" Message="{Binding VisualMessage}" ChipBrush="{Binding Settings.BarNormalBrush}" TextBrush="{Binding Settings.LabelBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}">
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Background="Transparent">
+            <controls:WordSortVisualizer x:Name="WordScene" Words="{Binding Chips}" Message="{Binding VisualMessage}" ChipBrush="{Binding Settings.BarNormalBrush}" TextBrush="{Binding Settings.LabelBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}">
               <controls:WordSortVisualizer.MoveDurationMs>
                 <MultiBinding Converter="{StaticResource StepDuration}">
                   <Binding Path="DelayMs"/>
@@ -30,11 +30,35 @@
               </controls:WordSortVisualizer.MoveDurationMs>
             </controls:WordSortVisualizer>
           </ScrollViewer>
-          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12">
+          <TextBlock Grid.Row="2" Classes="h2" Text="{Binding DetailTitle}" TextWrapping="Wrap" IsVisible="{Binding HasStepDetail}"/>
+          <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasStepDetail}">
+            <controls:StepItemsControl MoveDurationMs="{Binding #WordScene.MoveDurationMs}" ItemsSource="{Binding DetailLanes}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Margin="0,0,0,8" Spacing="4">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <ItemsControl ItemsSource="{Binding Cells}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <controls:HighlightBorder IsCompared="{Binding Active}" Margin="0,0,4,4">
+                            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" MaxWidth="280"/>
+                          </controls:HighlightBorder>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </controls:StepItemsControl>
+          </ScrollViewer>
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12" IsVisible="{Binding !HasStepDetail}">
             <TextBlock Classes="h2" Text="Частота слов" TextWrapping="Wrap"/>
             <TextBlock Classes="subtle" Text="{Binding FrequencyInfo}" TextWrapping="Wrap"/>
           </StackPanel>
-          <DataGrid Grid.Row="3" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding Frequencies}">
+          <DataGrid Grid.Row="3" IsVisible="{Binding !HasStepDetail}" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding Frequencies}">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Слово" Binding="{Binding Word}" Width="*"/>
               <DataGridTemplateColumn Header="Число повторений" Width="2*">
@@ -48,6 +72,22 @@
             </DataGrid.Columns>
           </DataGrid>
         </Grid>
+      </Border>
+      <Border Grid.Column="2" Width="260" Margin="16,0,0,0" Padding="16,8,0,0"
+              BorderThickness="1,0,0,0" BorderBrush="{DynamicResource CardBorderBrush}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="8">
+            <StackPanel Spacing="4" IsVisible="{Binding VisualMessage, Converter={x:Static StringConverters.IsNullOrEmpty}}">
+              <TextBlock Classes="h2" Text="Стек участков"/>
+              <TextBlock Text="Нет активных или ожидающих участков." TextWrapping="Wrap"
+                         IsVisible="{Binding WorkStack, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
+              <controls:StepItemsControl Lines="{Binding WorkStack}" ItemTemplate="{StaticResource StackLine}" MoveDurationMs="{Binding #WordScene.MoveDurationMs}"
+                         IsVisible="{Binding WorkStack, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
+            <TextBlock Classes="h2" Text="Правила алгоритма"/>
+            <TextBlock Text="{Binding SelectedAlgorithm.Algo.Reference}" TextWrapping="Wrap"/>
+          </StackPanel>
+        </ScrollViewer>
       </Border>
     </Grid>
     <ScrollViewer MaxWidth="1160" Grid.Row="2" MaxHeight="82" HorizontalScrollBarVisibility="Disabled">
