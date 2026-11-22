@@ -43,6 +43,7 @@ public partial class Task2ViewModel : ObservableObject
     private string _separatorInfo = "Разделитель определится по файлу.";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AlgorithmReference))]
     private string? _selectedKeyColumn;
 
     [ObservableProperty]
@@ -51,6 +52,7 @@ public partial class Task2ViewModel : ObservableObject
     public KeyType SelectedKeyType => (KeyType)Math.Clamp(SelectedKeyTypeIndex, 0, 2);
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AlgorithmReference))]
     private int _selectedDirectionIndex; // 0 — возрастание, 1 — убывание
 
     /// <summary>Фильтр записей перед сортировкой: 0 — без фильтра, иначе индекс колонки из FilterOptions − 1.</summary>
@@ -66,9 +68,11 @@ public partial class Task2ViewModel : ObservableObject
     private int _selectedSampleIndex;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AlgorithmReference))]
     private int _selectedSorterIndex;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AlgorithmReference))]
     private int _multiwayK = 2;
 
     public IReadOnlyList<string> SorterNames { get; }
@@ -91,6 +95,18 @@ public partial class Task2ViewModel : ObservableObject
     public IReadOnlyList<string> FilterOptions =>
         new[] { "(без фильтра)" }.Concat(Table?.Headers ?? Enumerable.Empty<string>()).ToArray();
 
+    public string AlgorithmReference => (uint)SelectedSorterIndex < (uint)_sorters.Count
+        ? $"""
+          {_sorters[SelectedSorterIndex].Reference}
+
+          Ключ — столбец «{SelectedKeyColumn ?? "не выбран"}». Порядок — {(SelectedDirectionIndex == 1 ? "по убыванию" : "по возрастанию")}. № обозначает исходную строку.
+
+          Серия — упорядоченные строки. Распределяем серии по лентам по очереди. Ленты A и B меняются ролями после каждого прохода.
+
+          За раз объединяем до {(IsMultiway ? Math.Clamp(MultiwayK, 2, 8) : 2)} серий. Сравниваем первые непрочитанные строки. Остаток единственной серии дописываем целиком.
+          """
+        : string.Empty;
+
     public string AlgorithmDescription => (uint)SelectedSorterIndex < (uint)_sorters.Count
         ? _sorters[SelectedSorterIndex].Description : string.Empty;
 
@@ -98,6 +114,8 @@ public partial class Task2ViewModel : ObservableObject
 
     [ObservableProperty]
     private IReadOnlyList<TapeState> _tapes = [];
+
+    [ObservableProperty] private string _tapeCounts = "";
 
     [ObservableProperty]
     private string _phaseText = "";
@@ -264,6 +282,7 @@ public partial class Task2ViewModel : ObservableObject
         Moves = 0;
         Log.Clear();
         Tapes = [];
+        TapeCounts = "";
         PhaseText = "";
         Explanation = "Выберите ключевой атрибут и запустите сортировку.";
         IsPlaying = false;
@@ -505,6 +524,9 @@ public partial class Task2ViewModel : ObservableObject
         if (_pendingVisual is not { } step) return;
         _pendingVisual = null;
         Tapes = CompactTapes(step.Tapes);
+        TapeCounts = step.Result is not null ? "Слияние завершено. Лента результата: 1."
+            : step.InputTapes == 0 ? $"Вход: исходный CSV (1 файл) · Выходные ленты: {step.OutputTapes}"
+            : $"Входные ленты: {step.InputTapes} · Выходные: {step.OutputTapes}";
     }
 
     private void ApplyStep(ExternalSortStep step)
@@ -571,7 +593,7 @@ public partial class Task2ViewModel : ObservableObject
                 head.Add(new ChipVm { Text = $"…+{block.Chips.Count - MaxChipsShown}" });
                 compact.Add(new SeriesBlock(head));
             }
-            result.Add(new TapeState(tape.Name, compact));
+            result.Add(tape with { Series = compact });
         }
         return result;
     }

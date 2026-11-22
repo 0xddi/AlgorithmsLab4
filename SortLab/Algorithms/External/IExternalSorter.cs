@@ -7,6 +7,7 @@ public interface IExternalSorter
 {
     string Name { get; }
     string Description { get; }
+    string Reference { get; }
 
     /// <summary>Число лент, используемых сортировщиком (для многопутевого слияния — k).</summary>
     bool NeedsK { get; }

@@ -7,6 +7,7 @@ public interface IStringSortAlgorithm
 {
     string Name { get; }
     string Description { get; }
+    string Reference { get; }
 
     /// <summary>Шаги с полными снимками (для визуализации).</summary>
     IEnumerable<StringSortStep> GetSteps(string[] words) => GetSteps(words, snapshots: true);

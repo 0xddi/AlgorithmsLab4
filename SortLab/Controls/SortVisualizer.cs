@@ -17,7 +17,7 @@ public class SortVisualizer : Control
     {
         AffectsRender<SortVisualizer>(BarsProperty, ShowLabelsProperty,
             NormalBrushProperty, CompareBrushProperty, SwapBrushProperty, SortedBrushProperty,
-            PivotBrushProperty, LabelBrushProperty);
+            PivotBrushProperty, LabelBrushProperty, ShellGapProperty);
     }
 
     public static readonly StyledProperty<IReadOnlyList<SortBar>?> BarsProperty =
@@ -43,6 +43,9 @@ public class SortVisualizer : Control
 
     public static readonly StyledProperty<IBrush?> LabelBrushProperty =
         AvaloniaProperty.Register<SortVisualizer, IBrush?>(nameof(LabelBrush));
+    public static readonly StyledProperty<int> ShellGapProperty =
+        AvaloniaProperty.Register<SortVisualizer, int>(nameof(ShellGap));
+    public int ShellGap { get => GetValue(ShellGapProperty); set => SetValue(ShellGapProperty, value); }
 
     public IReadOnlyList<SortBar>? Bars
     {
@@ -75,6 +78,9 @@ public class SortVisualizer : Control
     private long _started;
     private double _duration;
     private bool _frameRequested;
+    private double _bracketFromLeft, _bracketFromRight;
+    private int _bracketLeft = -1, _bracketRight = -1;
+    private long _bracketStarted;
 
     private double Progress()
     {
@@ -146,10 +152,10 @@ public class SortVisualizer : Control
         int n = bars.Count;
         const double topPad = 8;
         bool showPositions = ShowLabels && bounds.Width / n >= 32;
-        double bottomPad = showPositions ? 48 : 4;
+        double bottomPad = showPositions || ShellGap > 0 ? 48 : 4;
         double labelSpace = ShowLabels ? 18 : 0;
         double slotWidth = bounds.Width / n;
-        double barW = Math.Min(78, slotWidth * (n <= 24 ? 0.60 : 0.85));
+        double barW = slotWidth * (n <= 24 ? 0.60 : 0.85);
         double gap = slotWidth - barW;
         if (barW <= 0) return;
 
@@ -173,7 +179,7 @@ public class SortVisualizer : Control
         for (int i = 0; i < n; i++)
         {
             var bar = bars[i];
-            if (bar.Mark == StepMark.Compare)
+            if (bar.Mark == StepMark.Compare || bar.IsCompared)
             {
                 if (firstCompared < 0) firstCompared = i;
                 lastCompared = i;
@@ -207,15 +213,34 @@ public class SortVisualizer : Control
         var pen = new Pen(LabelBrush ?? Brushes.Gray, 1, null, PenLineCap.Round);
         context.DrawLine(pen, new Point(0, topPad + labelSpace + plotHeight), new Point(bounds.Width, topPad + labelSpace + plotHeight));
 
-        if (showPositions && lastCompared > firstCompared)
+        if (ShellGap == 0 || lastCompared <= firstCompared)
+            _bracketLeft = _bracketRight = -1;
+        if ((showPositions || ShellGap > 0) && lastCompared > firstCompared)
         {
             double left = (firstCompared + 0.5) * slotWidth;
             double right = (lastCompared + 0.5) * slotWidth;
+            if (ShellGap > 0 && MoveDurationMs > 0)
+            {
+                double fraction = Math.Min(1, Stopwatch.GetElapsedTime(_bracketStarted).TotalMilliseconds / MoveDurationMs);
+                fraction = fraction * fraction * (3 - 2 * fraction);
+                if (firstCompared != _bracketLeft || lastCompared != _bracketRight)
+                {
+                    _bracketFromLeft = _bracketLeft < 0 ? firstCompared : _bracketFromLeft + (_bracketLeft - _bracketFromLeft) * fraction;
+                    _bracketFromRight = _bracketRight < 0 ? firstCompared : _bracketFromRight + (_bracketRight - _bracketFromRight) * fraction;
+                    _bracketLeft = firstCompared;
+                    _bracketRight = lastCompared;
+                    _bracketStarted = Stopwatch.GetTimestamp();
+                    fraction = 0;
+                }
+                left = (_bracketFromLeft + (_bracketLeft - _bracketFromLeft) * fraction + 0.5) * slotWidth;
+                right = (_bracketFromRight + (_bracketRight - _bracketFromRight) * fraction + 0.5) * slotWidth;
+                if (fraction < 1) RequestNextFrame();
+            }
             double y = bounds.Height - 20;
             context.DrawLine(pen, new Point(left, y - 5), new Point(left, y));
             context.DrawLine(pen, new Point(left, y), new Point(right, y));
             context.DrawLine(pen, new Point(right, y), new Point(right, y - 5));
-            var caption = new FormattedText("сравнение", CultureInfo.CurrentCulture,
+            var caption = new FormattedText(ShellGap > 0 ? $"расстояние: {ShellGap}" : "сравнение", CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight, LabelTypeface, 12, LabelBrush ?? Brushes.Gray);
             double x = Math.Clamp((left + right - caption.Width) / 2, 0, Math.Max(0, bounds.Width - caption.Width));
             context.DrawText(caption, new Point(x, y + 2));
@@ -235,10 +260,10 @@ public class SortVisualizer : Control
 
     private IBrush BrushFor(StepMark mark) => mark switch
     {
-        StepMark.Compare => CompareBrush ?? Brushes.Orange,
+        StepMark.Compare or StepMark.HeapChild => CompareBrush ?? Brushes.Orange,
         StepMark.Swap => SwapBrush ?? Brushes.Red,
         StepMark.Sorted => SortedBrush ?? Brushes.Green,
-        StepMark.Pivot => PivotBrush ?? Brushes.Purple,
+        StepMark.Pivot or StepMark.HeapParent => PivotBrush ?? Brushes.Purple,
         _ => NormalBrush ?? Brushes.SteelBlue,
     };
 

@@ -22,7 +22,7 @@
                             HeaderTemplate="{StaticResource GridHeaderTemplate}" />
         <DataGridTextColumn Header="Операция" Binding="{Binding Operation}" Width="108"
                             HeaderTemplate="{StaticResource GridHeaderTemplate}" />
-        <DataGridTextColumn Header="Индексы" Binding="{Binding Indices}" Width="78"
+        <DataGridTextColumn Header="Позиции / строки" Binding="{Binding Indices}" Width="88"
                             HeaderTemplate="{StaticResource GridHeaderTemplate}" />
         <DataGridTextColumn Header="Значения" Binding="{Binding Values}" Width="86"
                             HeaderTemplate="{StaticResource GridHeaderTemplate}" />

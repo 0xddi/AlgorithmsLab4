@@ -11,18 +11,20 @@
         <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TapeLegend}"/>
       </controls:DetailButton.Detail>
     </controls:DetailButton>
-    <Grid Grid.Row="1">
-      <Grid x:Name="LegendRail" ColumnDefinitions="*,1160,*" IsVisible="False">
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto">
+      <Grid x:Name="LegendRail" IsVisible="False">
         <Border HorizontalAlignment="Right" Margin="0,0,16,0" Padding="12,16" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource CardBorderBrush}">
           <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TapeLegend}"/>
         </Border>
       </Grid>
-      <Border MaxWidth="1160" Classes="scene">
+      <Border Grid.Column="1" Classes="scene">
         <TabControl>
           <TabItem Header="Серии и ленты">
-            <Panel>
-              <TextBlock Classes="subtle" IsVisible="{Binding !Tapes.Count}" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" Text="Серии появятся после первого шага сортировки."/>
-              <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <Grid RowDefinitions="Auto,*" RowSpacing="6">
+              <TextBlock Text="{Binding TapeCounts}" TextWrapping="Wrap" FontWeight="SemiBold"
+                         IsVisible="{Binding TapeCounts, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+              <TextBlock Grid.Row="1" Classes="subtle" IsVisible="{Binding !Tapes.Count}" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" Text="Серии появятся после первого шага сортировки."/>
+              <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <controls:TapeItemsControl ItemsSource="{Binding Tapes}">
                   <controls:TapeItemsControl.MoveDurationMs>
                     <MultiBinding Converter="{StaticResource StepDuration}">
@@ -39,7 +41,11 @@
                     <DataTemplate>
                       <Border Background="{DynamicResource PanelBgBrush}" CornerRadius="8" Padding="8">
                         <StackPanel Spacing="6">
-                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding Role}" Classes="subtle"/>
+                          </StackPanel>
+                          <TextBlock Text="Пустая лента" Classes="subtle" IsVisible="{Binding !Series.Count}"/>
                           <ItemsControl ItemsSource="{Binding Series}">
                             <ItemsControl.ItemsPanel>
                               <ItemsPanelTemplate>
@@ -73,7 +79,7 @@
                   </ItemsControl.ItemTemplate>
                 </controls:TapeItemsControl>
               </ScrollViewer>
-            </Panel>
+            </Grid>
           </TabItem>
           <TabItem Header="Входная таблица">
             <DataGrid x:Name="SourceGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding Table.Rows}"/>
@@ -83,6 +89,7 @@
           </TabItem>
         </TabControl>
       </Border>
+      <ContentControl Grid.Column="2" Content="{Binding AlgorithmReference}" ContentTemplate="{StaticResource AlgorithmReference}"/>
     </Grid>
     <ScrollViewer MaxWidth="1160" Grid.Row="2" MaxHeight="82" HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="2">

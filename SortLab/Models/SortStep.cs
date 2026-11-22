@@ -18,6 +18,8 @@ public enum StepMark
     Swap,    // участвующий в перестановке / ключевой
     Sorted,  // уже отсортирован
     Pivot,   // опорный элемент
+    HeapParent,
+    HeapChild,
 }
 
 /// <summary>Один шаг алгоритма сортировки: снимок массива, подсветка и пояснение.</summary>
@@ -28,7 +30,20 @@ public sealed record SortStep(
     int IndexA,
     int IndexB,
     string Explanation,
-    int? SavedKey = null);
+    int? SavedKey = null,
+    HeapFrame? Heap = null,
+    int Gap = 0,
+    RangeFrame? Call = null);
+
+// Границы участков включительные, с единицы.
+public sealed record RangeFrame(int Start, int End, RangeFrame? Caller = null);
+
+// Позиции на диаграмме начинаются с единицы.
+public sealed record HeapFrame(int Size, int? Parent = null)
+{
+    public int? Left => 2 * Parent;
+    public int? Right => Left + 1;
+}
 
 /// <summary>
 /// Контекст выполнения алгоритма: массив, подсветка, удобные методы для формирования шагов.
@@ -48,8 +63,8 @@ public sealed class SortCtx
     }
 
     /// <summary>Сформировать шаг с копией текущего состояния массива и подсветки.</summary>
-    public SortStep S(SortOpType op, int ia, int ib, string explanation) =>
-        new(op, (int[])A.Clone(), (StepMark[])_m.Clone(), ia, ib, explanation);
+    public SortStep S(SortOpType op, int ia, int ib, string explanation, HeapFrame? heap = null) =>
+        new(op, (int[])A.Clone(), (StepMark[])_m.Clone(), ia, ib, explanation, Heap: heap);
 
     public void MarkAll(StepMark m)
     {
@@ -71,4 +86,4 @@ public sealed class SortCtx
 }
 
 /// <summary>Элемент столбика визуализации.</summary>
-public sealed record SortBar(int Value, StepMark Mark);
+public sealed record SortBar(int Value, StepMark Mark, bool IsCompared = false);
