@@ -21,7 +21,7 @@
         <Grid RowDefinitions="Auto,*,Auto,*" RowSpacing="6">
           <TextBlock Classes="h2" Text="Слова по порядку" TextWrapping="Wrap"/>
           <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Background="Transparent">
-            <controls:WordSortVisualizer x:Name="WordScene" Words="{Binding Chips}" Message="{Binding VisualMessage}" ChipBrush="{Binding Settings.BarNormalBrush}" TextBrush="{Binding Settings.LabelBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}">
+            <controls:WordSortVisualizer x:Name="WordScene" Words="{Binding Chips}" ActiveRange="{Binding ActiveWordRange}" Message="{Binding VisualMessage}" ChipBrush="{Binding Settings.BarNormalBrush}" TextBrush="{Binding Settings.LabelBrush}" CompareBrush="{Binding Settings.BarCompareBrush}" SwapBrush="{Binding Settings.BarSwapBrush}" SortedBrush="{Binding Settings.BarSortedBrush}" PivotBrush="{Binding Settings.BarPivotBrush}">
               <controls:WordSortVisualizer.MoveDurationMs>
                 <MultiBinding Converter="{StaticResource StepDuration}">
                   <Binding Path="DelayMs"/>
@@ -78,11 +78,12 @@
         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="8">
             <StackPanel Spacing="4" IsVisible="{Binding VisualMessage, Converter={x:Static StringConverters.IsNullOrEmpty}}">
-              <TextBlock Classes="h2" Text="Стек участков"/>
-              <TextBlock Text="Нет активных или ожидающих участков." TextWrapping="Wrap"
-                         IsVisible="{Binding WorkStack, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
-              <controls:StepItemsControl Lines="{Binding WorkStack}" ItemTemplate="{StaticResource StackLine}" MoveDurationMs="{Binding #WordScene.MoveDurationMs}"
-                         IsVisible="{Binding WorkStack, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+              <TextBlock Classes="h2" Text="Работа с участками"/>
+              <TextBlock Classes="subtle" Text="Карточки идут в порядке обработки. Текущий участок выделен среди слов." TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding WordWorkStatus}" TextWrapping="Wrap"
+                         IsVisible="{Binding WordWorkStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+              <controls:StepItemsControl ItemsSource="{Binding WorkCards}" ItemTemplate="{StaticResource RangeCardTemplate}"
+                                         MoveDurationMs="{Binding #WordScene.MoveDurationMs}"/>
             </StackPanel>
             <TextBlock Classes="h2" Text="Правила алгоритма"/>
             <TextBlock Text="{Binding SelectedAlgorithm.Algo.Reference}" TextWrapping="Wrap"/>

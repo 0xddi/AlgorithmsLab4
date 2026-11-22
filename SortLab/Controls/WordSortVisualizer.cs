@@ -18,7 +18,7 @@ public class WordSortVisualizer : Control
 
     static WordSortVisualizer()
     {
-        AffectsRender<WordSortVisualizer>(WordsProperty, MessageProperty,
+        AffectsRender<WordSortVisualizer>(WordsProperty, MessageProperty, ActiveRangeProperty,
             ChipBrushProperty, TextBrushProperty,
             CompareBrushProperty, SwapBrushProperty, SortedBrushProperty, PivotBrushProperty);
     }
@@ -28,6 +28,10 @@ public class WordSortVisualizer : Control
 
     public static readonly StyledProperty<string?> MessageProperty =
         AvaloniaProperty.Register<WordSortVisualizer, string?>(nameof(Message));
+
+    public static readonly StyledProperty<RangeCard?> ActiveRangeProperty =
+        AvaloniaProperty.Register<WordSortVisualizer, RangeCard?>(nameof(ActiveRange));
+    public RangeCard? ActiveRange { get => GetValue(ActiveRangeProperty); set => SetValue(ActiveRangeProperty, value); }
 
     public static readonly StyledProperty<IBrush?> ChipBrushProperty =
         AvaloniaProperty.Register<WordSortVisualizer, IBrush?>(nameof(ChipBrush));
@@ -178,6 +182,8 @@ public class WordSortVisualizer : Control
         }
 
         EnsureLayout(bounds.Width);
+        var activeRange = ActiveRange;
+        var rangePen = activeRange is null ? null : new Pen(TextBrush ?? Brushes.Gray, 1.5);
         for (int i = 0; i < words.Count; i++)
         {
             var (x, y) = CurrentPosition(i);
@@ -185,6 +191,8 @@ public class WordSortVisualizer : Control
             var rect = new RoundedRect(new Rect(x, y, _widths[i], _chipH), Math.Min(5, _chipH / 2));
             var background = BrushFor(chip.Mark);
             context.DrawRectangle(background, null, rect);
+            if (activeRange is not null && i + 1 >= activeRange.Start && i + 1 <= activeRange.End)
+                context.DrawRectangle(null, rangePen, rect);
 
             var fg = background is ISolidColorBrush solid
                 ? ContrastingText(solid.Color)

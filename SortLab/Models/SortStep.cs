@@ -36,7 +36,12 @@ public sealed record SortStep(
     RangeFrame? Call = null);
 
 // Границы участков включительные, с единицы.
-public sealed record RangeFrame(int Start, int End, RangeFrame? Caller = null);
+public sealed record RangeFrame(int Start, int End, RangeFrame? Caller = null, string Detail = "", string Status = "Сейчас");
+
+public sealed record RangeCard(string Status, int Start, int End, string Detail, bool IsCurrent = false)
+{
+    public string Title => $"{Status} · {(Start == End ? $"позиция {Start}" : $"позиции {Start}–{End}")}";
+}
 
 // Позиции на диаграмме начинаются с единицы.
 public sealed record HeapFrame(int Size, int? Parent = null)

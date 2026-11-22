@@ -41,6 +41,15 @@
       </ResourceDictionary.ThemeDictionaries>
       <controls:StepDurationConverter x:Key="StepDuration"/>
       <DataTemplate x:Key="StackLine"><TextBlock Text="{Binding}" TextWrapping="Wrap"/></DataTemplate>
+      <DataTemplate x:Key="RangeCardTemplate">
+        <Border Classes="card rangeCard" Classes.current="{Binding IsCurrent}" Margin="0,0,0,5" Padding="9,7">
+          <StackPanel Spacing="3">
+            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding Detail}" Classes="subtle" TextWrapping="Wrap"
+                       IsVisible="{Binding Detail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+          </StackPanel>
+        </Border>
+      </DataTemplate>
       <DataTemplate x:Key="AlgorithmReference">
         <Border Width="260" Margin="16,0,0,0" Padding="16,8,0,0" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource CardBorderBrush}">
           <ScrollViewer HorizontalScrollBarVisibility="Disabled">
@@ -167,6 +176,11 @@
     <Style Selector="Border.card.accentTop">
       <Setter Property="BorderThickness" Value="0,2,0,0" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="Border.rangeCard.current">
+      <Setter Property="Background" Value="{DynamicResource PanelBgBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LinkBrush}"/>
     </Style>
 
     <Style Selector="TextBlock.h1">
