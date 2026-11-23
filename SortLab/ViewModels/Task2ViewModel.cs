@@ -99,9 +99,9 @@ public partial class Task2ViewModel : ObservableObject
         ? $"""
           {_sorters[SelectedSorterIndex].Reference}
 
-          Ключ — столбец «{SelectedKeyColumn ?? "не выбран"}». Порядок — {(SelectedDirectionIndex == 1 ? "по убыванию" : "по возрастанию")}. № обозначает исходную строку.
+          Ключ: столбец «{SelectedKeyColumn ?? "не выбран"}». Порядок: {(SelectedDirectionIndex == 1 ? "по убыванию" : "по возрастанию")}. № обозначает исходную строку.
 
-          Серия — упорядоченные строки. Распределяем серии по лентам по очереди. Ленты A и B меняются ролями после каждого прохода.
+          Серия: упорядоченные строки. Распределяем серии по лентам по очереди. Ленты A и B меняются ролями после каждого прохода.
 
           За раз объединяем до {(IsMultiway ? Math.Clamp(MultiwayK, 2, 8) : 2)} серий. Сравниваем первые непрочитанные строки. Остаток единственной серии дописываем целиком.
           """
@@ -212,9 +212,9 @@ public partial class Task2ViewModel : ObservableObject
     {
         (';', false) => "; (точка с запятой)",
         ('\t', false) => "Tab",
-        (';', true) => "; (точка с запятой) — определён по файлу",
-        ('\t', true) => "Tab — определён по файлу",
-        (_, true) => ", (запятая) — определён по файлу",
+        (';', true) => "; (точка с запятой), определён по файлу",
+        ('\t', true) => "Tab, определён по файлу",
+        (_, true) => ", (запятая), определён по файлу",
         _ => ", (запятая)",
     };
 
@@ -326,7 +326,7 @@ public partial class Task2ViewModel : ObservableObject
         var filtered = rows.Where(r => string.Equals(r[col].Trim(), value, StringComparison.OrdinalIgnoreCase)).ToList();
         if (filtered.Count == 0)
         {
-            StatusMessage = $"Фильтр «{column} = {value}» ничего не отобрал — сортировка не запущена.";
+            StatusMessage = $"Фильтр «{column} = {value}» ничего не отобрал, сортировка не запущена.";
             return null;
         }
         return filtered;

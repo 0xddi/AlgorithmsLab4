@@ -63,14 +63,14 @@
             <TextBlock Classes="h2" Text="На этом шаге"/>
             <TextBlock Text="{Binding HeapVariables}" TextWrapping="Wrap"/>
             <TextBlock Classes="h2" Text="Позиции в куче"/>
-            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Номер под столбиком — позиция, число над ним — значение. Корень занимает позицию 1."/>
-            <TextBlock Text="Размер кучи — число активных элементов." TextWrapping="Wrap"/>
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Номер под столбиком показывает позицию, число над ним показывает значение. Корень занимает позицию 1."/>
+            <TextBlock Text="Размер кучи: число активных элементов." TextWrapping="Wrap"/>
             <TextBlock Text="Левый ребёнок: 2 × позиция родителя" TextWrapping="Wrap"/>
             <TextBlock Text="Правый ребёнок: позиция левого ребёнка + 1" TextWrapping="Wrap"/>
-            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Детей записывают парами по уровням: у позиции 1 это 2 и 3, у позиции 2 — 4 и 5. Позиция больше размера кучи лежит вне кучи."/>
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Детей записывают парами по уровням: у позиции 1 это 2 и 3, у позиции 2 это 4 и 5. Позиция больше размера кучи лежит вне кучи."/>
             <TextBlock Text="Позиция родителя = целая часть (позиция ребёнка / 2)" TextWrapping="Wrap"/>
             <TextBlock Text="{Binding SelectedAlgorithm.Reference}" TextWrapping="Wrap"/>
-            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Целая часть — результат деления с отброшенным остатком."/>
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Целая часть: результат деления с отброшенным остатком."/>
           </StackPanel>
         </ScrollViewer>
       </Border>

@@ -67,9 +67,18 @@ public sealed class SortCtx
         _m = new StepMark[N];
     }
 
+    /// <summary>
+    /// true: каждый шаг содержит копию массива и подсветки (для визуализации).
+    /// false: снимки не копируются (для замеров времени на больших массивах).
+    /// </summary>
+    public bool Snapshots { get; init; } = true;
+
     /// <summary>Сформировать шаг с копией текущего состояния массива и подсветки.</summary>
     public SortStep S(SortOpType op, int ia, int ib, string explanation, HeapFrame? heap = null) =>
-        new(op, (int[])A.Clone(), (StepMark[])_m.Clone(), ia, ib, explanation, Heap: heap);
+        new(op,
+            Snapshots ? (int[])A.Clone() : Array.Empty<int>(),
+            Snapshots ? (StepMark[])_m.Clone() : Array.Empty<StepMark>(),
+            ia, ib, explanation, Heap: heap);
 
     public void MarkAll(StepMark m)
     {

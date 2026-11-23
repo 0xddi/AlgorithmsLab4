@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:SortLab.Controls" x:Class="SortLab.Views.BenchmarkView">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:SortLab.Controls" xmlns:views="using:SortLab.Views" x:Class="SortLab.Views.BenchmarkView">
   <UserControl.Styles>
     <Style Selector="ListBox.benchmarkResults ListBoxItem">
       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -18,9 +18,11 @@
   <Grid RowDefinitions="Auto,*" RowSpacing="10" MaxWidth="1160">
     <StackPanel HorizontalAlignment="Center" Spacing="6" Margin="0,5,0,9">
       <TextBlock Classes="hero" Text="Замеры времени"/>
-      <TextBlock Text="{Binding BenchStatus}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource SubtleTextBrush}"/>
+      <TextBlock x:Name="PageStatus" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource SubtleTextBrush}"/>
     </StackPanel>
-    <Grid Grid.Row="1" ColumnDefinitions="300,*" ColumnSpacing="12">
+    <TabControl x:Name="Sections" Grid.Row="1" Padding="0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+      <TabItem Header="Сортировка слов">
+        <Grid ColumnDefinitions="300,*" ColumnSpacing="12">
       <Border Classes="card">
         <Grid RowDefinitions="*,Auto" RowSpacing="8">
           <ScrollViewer HorizontalScrollBarVisibility="Disabled">
@@ -62,11 +64,11 @@
                 <TextBlock Text="{Binding BenchLengthsError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"
                            IsVisible="{Binding BenchLengthsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
               </StackPanel>
-              <Grid ColumnDefinitions="*,96" ColumnSpacing="6">
-                <TextBlock Text="Повторов на объём" Classes="subtle" VerticalAlignment="Center"/>
-                <NumericUpDown Grid.Column="1" Minimum="1" Maximum="20" Increment="1" FormatString="0" Value="{Binding BenchRuns, Mode=TwoWay}"
-                               AutomationProperties.Name="Повторов на объём"/>
-              </Grid>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Повторов на объём" Classes="subtle"/>
+                <NumericUpDown Minimum="1" Maximum="100" Increment="1" FormatString="0" Value="{Binding BenchRuns, Mode=TwoWay}"
+                               HorizontalAlignment="Stretch" AutomationProperties.Name="Повторов на объём"/>
+              </StackPanel>
             </StackPanel>
           </ScrollViewer>
           <StackPanel Grid.Row="1" Spacing="5">
@@ -130,6 +132,11 @@
           </TabControl>
         </DockPanel>
       </Border>
-    </Grid>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Сортировка массивов">
+        <views:ArrayBenchmarkView DataContext="{Binding Arrays}"/>
+      </TabItem>
+    </TabControl>
   </Grid>
 </UserControl>

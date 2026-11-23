@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
         x:CompileBindings="False"
-        Title="Сортировки — лабораторный стенд"
+        Title="Сортировки: лабораторный стенд"
         Width="1352" Height="860" MinWidth="1000" MinHeight="660"
         Background="{DynamicResource WindowBgBrush}"
         FontSize="16">

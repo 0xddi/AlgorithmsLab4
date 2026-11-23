@@ -23,7 +23,7 @@
           <TextBlock Text="{Binding MovementPercent, StringFormat='Перемещение: {0:F0}% интервала шага'}" />
           <Slider Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True"
                   AutomationProperties.Name="Длительность перемещения" Value="{Binding MovementPercent}"/>
-          <TextBlock Classes="subtle" Text="Оставшаяся часть интервала — пауза после движения. При 0% элементы меняют позицию мгновенно." TextWrapping="Wrap"/>
+          <TextBlock Classes="subtle" Text="Оставшаяся часть интервала: пауза после движения. При 0% элементы меняют позицию мгновенно." TextWrapping="Wrap"/>
           <CheckBox Content="Показывать подписи значений над столбиками" IsChecked="{Binding ShowValueLabels}" Margin="0,6,0,0" />
         </StackPanel>
       </Border>

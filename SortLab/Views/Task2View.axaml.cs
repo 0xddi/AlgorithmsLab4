@@ -15,11 +15,25 @@ namespace SortLab.Views;
 /// </summary>
 public partial class Task2View : UserControl
 {
+    // Желаемое смещение прокрутки лент: восстанавливаем его после пересборки
+    // содержимого, иначе при каждом шаге сортировки ScrollViewer дёргается.
+    private double _tapesScrollTarget = -1;
+
     public Task2View()
     {
         InitializeComponent();
         LegendLayout.Attach(this, LegendRail, LegendButton);
         DataContextChanged += (_, _) => WireColumns();
+        TapesScroll.LayoutUpdated += (_, _) => RestoreTapesScroll();
+    }
+
+    private void RestoreTapesScroll()
+    {
+        if (_tapesScrollTarget < 0) return;
+        double target = _tapesScrollTarget;
+        _tapesScrollTarget = -1;
+        if (Math.Abs(TapesScroll.Offset.Y - target) > 0.5)
+            TapesScroll.Offset = new Vector(TapesScroll.Offset.X, target);
     }
 
     private void WireColumns()
@@ -55,6 +69,12 @@ public partial class Task2View : UserControl
                 BuildColumnsFor(SourceGrid, vm.Table.Headers);
             if (e.PropertyName == nameof(Task2ViewModel.ResultTable) && vm.ResultTable is not null)
                 BuildColumnsFor(ResultGrid, vm.ResultTable.Headers);
+            if (e.PropertyName == nameof(Task2ViewModel.Tapes))
+            {
+                // Запоминаем, где пользователь прокрутил ленты, до пересборки содержимого.
+                double y = TapesScroll.Offset.Y;
+                _tapesScrollTarget = y > 0 ? y : -1;
+            }
         };
         if (vm.Table is not null) BuildColumnsFor(SourceGrid, vm.Table.Headers);
         if (vm.ResultTable is not null) BuildColumnsFor(ResultGrid, vm.ResultTable.Headers);

@@ -65,7 +65,7 @@ public partial class Task1ViewModel : ObservableObject
     {
         string Position(int? position) => position switch
         {
-            null => "—",
+            null => "нет",
             int i when i > frame.Size => $"{i} (вне кучи)",
             int i => $"{i} (число {values[i - 1]})",
         };

@@ -53,7 +53,7 @@ public partial class App : Application
 
         var task1 = new Task1ViewModel(sortAlgorithms, settingsVm);
         var task2 = new Task2ViewModel(externalSorters, new CsvService(), settingsVm);
-        var task3 = new Task3ViewModel(stringSorters, new BenchmarkService(), settingsVm);
+        var task3 = new Task3ViewModel(stringSorters, sortAlgorithms, new BenchmarkService(), settingsVm);
 
         var mainVm = new MainWindowViewModel(task1, task2, task3, settingsVm);
 

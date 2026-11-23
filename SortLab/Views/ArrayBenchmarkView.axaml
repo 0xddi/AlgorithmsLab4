@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:SortLab.Controls" x:Class="SortLab.Views.ArrayBenchmarkView">
+  <UserControl.Styles>
+    <Style Selector="ListBox.benchmarkResults ListBoxItem">
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style Selector="Grid.benchmarkColumns > TextBlock">
+      <Setter Property="Margin" Value="6,2"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style Selector="Grid#ArrayResultsHeader > TextBlock">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}"/>
+    </Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="300,*" ColumnSpacing="12">
+    <Border Classes="card">
+      <Grid RowDefinitions="*,Auto" RowSpacing="8">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="6" IsEnabled="{Binding !BenchRunning}" Margin="0,0,4,0">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+              <TextBlock Classes="h2" Text="Запуск" VerticalAlignment="Center"/>
+              <controls:DetailButton Grid.Column="1" Classes="link" Content="Порядок и генератор" Padding="4,2">
+                <controls:DetailButton.Detail>
+                  <StackPanel Width="280" Spacing="6">
+                    <TextBlock Text="Порядок в массиве" Classes="subtle"/>
+                    <ComboBox ItemsSource="{Binding BenchInputOrders}" SelectedItem="{Binding BenchInput, Mode=TwoWay}"
+                              HorizontalAlignment="Stretch" AutomationProperties.Name="Порядок в массиве">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate><TextBlock Text="{Binding Name}"/></DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="Начальное число генератора" Classes="subtle"/>
+                    <NumericUpDown Minimum="0" Maximum="2147483647" Increment="1" FormatString="0" Value="{Binding BenchSeed, Mode=TwoWay}"
+                                   AutomationProperties.Name="Начальное число генератора"/>
+                    <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Оставьте поле пустым для случайного числа. Введите число из результатов, чтобы повторить массивы."/>
+                  </StackPanel>
+                </controls:DetailButton.Detail>
+              </controls:DetailButton>
+            </Grid>
+            <ItemsControl ItemsSource="{Binding BenchAlgorithms}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <CheckBox Content="{Binding Algorithm.Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" MinHeight="26" Padding="7,2,0,2"/>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel Spacing="4">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                <TextBlock Text="Объёмы, элементов" Classes="subtle" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Classes="link" Content="Стандартные" Padding="4,2" Command="{Binding ResetLengthsCommand}"
+                        AutomationProperties.Name="Вернуть стандартные объёмы"/>
+              </Grid>
+              <Grid ColumnDefinitions="40,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="6">
+                <TextBlock Text="От" Classes="subtle" VerticalAlignment="Center"/>
+                <NumericUpDown Grid.Column="1" Minimum="10" Maximum="20000" Increment="50" FormatString="0" Value="{Binding FromLength, Mode=TwoWay}"
+                               HorizontalAlignment="Stretch" AutomationProperties.Name="Начальный объём"/>
+                <TextBlock Grid.Row="1" Text="До" Classes="subtle" VerticalAlignment="Center"/>
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Minimum="10" Maximum="20000" Increment="50" FormatString="0" Value="{Binding ToLength, Mode=TwoWay}"
+                               HorizontalAlignment="Stretch" AutomationProperties.Name="Конечный объём"/>
+                <TextBlock Grid.Row="2" Text="Шаг" Classes="subtle" VerticalAlignment="Center"/>
+                <NumericUpDown Grid.Row="2" Grid.Column="1" Minimum="1" Maximum="20000" Increment="10" FormatString="0" Value="{Binding StepLength, Mode=TwoWay}"
+                               HorizontalAlignment="Stretch" AutomationProperties.Name="Шаг объёмов"/>
+              </Grid>
+              <TextBlock Text="{Binding LengthsSummary}" Classes="subtle" TextWrapping="Wrap"
+                         IsVisible="{Binding LengthsSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+              <TextBlock Text="{Binding BenchLengthsError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"
+                         IsVisible="{Binding BenchLengthsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Text="Повторов на объём" Classes="subtle"/>
+              <NumericUpDown Minimum="1" Maximum="100" Increment="1" FormatString="0" Value="{Binding BenchRuns, Mode=TwoWay}"
+                             HorizontalAlignment="Stretch" AutomationProperties.Name="Повторов на объём"/>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="1" Spacing="5">
+          <TextBlock Text="{Binding BenchSetupHint}" Classes="subtle" TextWrapping="Wrap"
+                     IsVisible="{Binding BenchSetupHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Content="Запустить замеры" Classes="primary" Command="{Binding RunBenchmarkCommand}" IsEnabled="{Binding CanRunBench}"/>
+            <Button Content="Отменить" Command="{Binding CancelBenchmarkCommand}" IsVisible="{Binding BenchRunning}"/>
+          </StackPanel>
+          <ProgressBar Value="{Binding BenchProgress}" Maximum="100" Height="4" IsVisible="{Binding BenchRunning}"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Border Classes="scene" Grid.Column="1" Padding="14,12">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Margin="4,0,4,4" Classes="subtle" TextWrapping="Wrap"
+                   Text="{Binding BenchResultSetup, StringFormat='{}Без визуализации · {0}'}"
+                   IsVisible="{Binding HasBenchResults}"/>
+        <TabControl Padding="0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+          <TabItem Header="График">
+            <controls:LineChart Categories="{Binding ChartCategories}" Series="{Binding ChartSeries}" XAxisTitle="Длина массива, элементов" YAxisTitle="Среднее время, мс" GridBrush="{Binding Settings.GridBrush}" LabelBrush="{Binding Settings.LabelBrush}" LineBrush1="{Binding Settings.ChartBrush1}" LineBrush2="{Binding Settings.ChartBrush2}" LineBrush3="{Binding Settings.ChartBrush3}" LineBrush4="{Binding Settings.ChartBrush4}" LineBrush5="{Binding Settings.ChartBrush5}" LineBrush6="{Binding Settings.ChartBrush6}"/>
+          </TabItem>
+          <TabItem Header="Столбцы">
+            <controls:BarChart Categories="{Binding ChartCategories}" Series="{Binding ChartSeries}" XAxisTitle="Длина массива, элементов" YAxisTitle="Среднее время, мс" GridBrush="{Binding Settings.GridBrush}" LabelBrush="{Binding Settings.LabelBrush}" BarBrush1="{Binding Settings.ChartBrush1}" BarBrush2="{Binding Settings.ChartBrush2}" BarBrush3="{Binding Settings.ChartBrush3}" BarBrush4="{Binding Settings.ChartBrush4}" BarBrush5="{Binding Settings.ChartBrush5}" BarBrush6="{Binding Settings.ChartBrush6}"/>
+          </TabItem>
+          <TabItem Header="Таблица" IsEnabled="{Binding HasBenchResults}">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Padding="0,0,14,4"
+                      BorderThickness="0,0,0,1" BorderBrush="{DynamicResource CardBorderBrush}">
+                <Grid x:Name="ArrayResultsHeader" Classes="benchmarkColumns" ColumnDefinitions="74,*,73,77,82,82">
+                  <TextBlock Text="Объём, эл."/>
+                  <TextBlock Grid.Column="1" Text="Алгоритм"/>
+                  <TextBlock Grid.Column="2" Text="Среднее, мс"/>
+                  <TextBlock Grid.Column="3" Text="Минимум, мс"/>
+                  <TextBlock Grid.Column="4" Text="Сравнения, сред."/>
+                  <TextBlock Grid.Column="5" Text="Операции, сред."/>
+                </Grid>
+              </Border>
+              <ListBox x:Name="ResultsList" Classes="benchmarkResults" ItemsSource="{Binding BenchmarkResults}"
+                       Background="Transparent" BorderThickness="0" Padding="0" FontSize="13"
+                       AutomationProperties.Name="Результаты замеров"
+                       ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <Border MinHeight="34" Padding="0,0,14,0" BorderThickness="0,0,0,1"
+                            BorderBrush="{DynamicResource CardBorderBrush}">
+                      <Grid Classes="benchmarkColumns" ColumnDefinitions="74,*,73,77,82,82">
+                        <TextBlock Text="{Binding Length}"/>
+                        <TextBlock Grid.Column="1" Text="{Binding Algorithm}" TextWrapping="Wrap"/>
+                        <TextBlock Grid.Column="2" Text="{Binding AvgMs, StringFormat=F3}"/>
+                        <TextBlock Grid.Column="3" Text="{Binding MinMs, StringFormat=F3}"/>
+                        <TextBlock Grid.Column="4" Text="{Binding Comparisons, StringFormat=F1}"/>
+                        <TextBlock Grid.Column="5" Text="{Binding Moves, StringFormat=F1}"/>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </DockPanel>
+          </TabItem>
+        </TabControl>
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using SortLab.Algorithms.Internal;
 using SortLab.Algorithms.Strings;
 using SortLab.Models;
 
@@ -6,7 +7,7 @@ namespace SortLab.Services;
 
 public enum BenchmarkInputOrder { Random, Ascending, Descending }
 
-/// <summary>Замеры времени и операций строковых сортировок.</summary>
+/// <summary>Замеры времени и операций сортировок.</summary>
 public sealed class BenchmarkService
 {
     public Task<List<BenchmarkResult>> RunAsync(
@@ -76,5 +77,86 @@ public sealed class BenchmarkService
             ct.ThrowIfCancellationRequested();
             return results;
         }, ct);
+    }
+
+    /// <summary>
+    /// Замеры алгоритмов внутренней сортировки на целочисленных массивах.
+    /// Шаги берутся без снимков массива: иначе на тысячах элементов копирование
+    /// сделало бы замеры бессмысленно медленными.
+    /// </summary>
+    public Task<List<BenchmarkResult>> RunArraysAsync(
+        int[] lengths, IReadOnlyList<ISortAlgorithm> algorithms, int runs, BenchmarkInputOrder order, int seed,
+        Action<int, string> progress, CancellationToken ct)
+    {
+        return Task.Run(() =>
+        {
+            var results = new List<BenchmarkResult>();
+            var random = new Random(seed);
+            int total = lengths.Length * algorithms.Count * runs;
+            int done = 0;
+            int reportedPercent = -1;
+
+            foreach (int length in lengths)
+            {
+                var samples = algorithms.Select(_ => new List<(double Ms, long Comparisons, long Moves)>(runs)).ToArray();
+                for (int run = 0; run < runs; run++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    int[] data = CreateArray(length, order, random);
+
+                    for (int i = 0; i < algorithms.Count; i++)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        var algorithm = algorithms[i];
+                        int percentage = total == 0 ? 100 : done * 100 / total;
+                        if (percentage != reportedPercent)
+                        {
+                            progress(percentage, $"{length} элементов · {algorithm.Name} · повтор {run + 1}/{runs}");
+                            reportedPercent = percentage;
+                        }
+
+                        long comparisons = 0, moves = 0;
+                        int steps = 0;
+                        var sw = Stopwatch.StartNew();
+                        foreach (var step in algorithm.GetSteps(data, snapshots: false))
+                        {
+                            if (step.Op == SortOpType.Compare) comparisons++;
+                            if (step.Op is SortOpType.Swap or SortOpType.Assign) moves++;
+                            if (++steps % 256 == 0) ct.ThrowIfCancellationRequested();
+                        }
+                        sw.Stop();
+                        samples[i].Add((sw.Elapsed.TotalMilliseconds, comparisons, moves));
+                        done++;
+                    }
+                }
+
+                for (int i = 0; i < algorithms.Count; i++)
+                {
+                    var runsForAlgorithm = samples[i];
+                    results.Add(new BenchmarkResult
+                    {
+                        Length = length,
+                        Algorithm = algorithms[i].Name,
+                        AvgMs = runsForAlgorithm.Average(s => s.Ms),
+                        MinMs = runsForAlgorithm.Min(s => s.Ms),
+                        Comparisons = runsForAlgorithm.Average(s => s.Comparisons),
+                        Moves = runsForAlgorithm.Average(s => s.Moves),
+                    });
+                }
+            }
+            ct.ThrowIfCancellationRequested();
+            return results;
+        }, ct);
+    }
+
+    /// <summary>Массив заданной длины: случайный, по возрастанию или по убыванию.</summary>
+    private static int[] CreateArray(int length, BenchmarkInputOrder order, Random random)
+    {
+        var data = new int[length];
+        for (int i = 0; i < length; i++)
+            data[i] = order == BenchmarkInputOrder.Random ? random.Next(1, 100000) : i + 1;
+        if (order == BenchmarkInputOrder.Descending)
+            Array.Reverse(data);
+        return data;
     }
 }

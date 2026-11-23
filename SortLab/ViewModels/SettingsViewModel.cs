@@ -36,6 +36,8 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private IBrush _chartBrush2 = new SolidColorBrush(Color.Parse("#FFB300"));
     [ObservableProperty] private IBrush _chartBrush3 = new SolidColorBrush(Color.Parse("#43A047"));
     [ObservableProperty] private IBrush _chartBrush4 = new SolidColorBrush(Color.Parse("#AB47BC"));
+    [ObservableProperty] private IBrush _chartBrush5 = new SolidColorBrush(Color.Parse("#3E7CA6"));
+    [ObservableProperty] private IBrush _chartBrush6 = new SolidColorBrush(Color.Parse("#C24D7A"));
 
     public IReadOnlyList<string> ColorSchemes { get; } = new[] { "Обычная", "Яркая", "Пастельная" };
 
@@ -94,7 +96,9 @@ public partial class SettingsViewModel : ObservableObject
         GridBrush = new SolidColorBrush(Color.Parse(palette.g));
         ChartBrush1 = ColorSchemeIndex == 0 ? BarSortedBrush : BarNormalBrush;
         ChartBrush2 = BarCompareBrush;
-        ChartBrush3 = BarSortedBrush;
+        ChartBrush3 = BarSwapBrush;
         ChartBrush4 = BarPivotBrush;
+        ChartBrush5 = new SolidColorBrush(Color.Parse(DarkTheme ? "#8FB8DE" : "#3E7CA6"));
+        ChartBrush6 = new SolidColorBrush(Color.Parse(DarkTheme ? "#E58FB0" : "#C24D7A"));
     }
 }

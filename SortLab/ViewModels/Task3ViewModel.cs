@@ -1,6 +1,7 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SortLab.Algorithms.Internal;
 using SortLab.Algorithms.Strings;
 using SortLab.Controls;
 using SortLab.Models;
@@ -141,7 +142,7 @@ public partial class Task3ViewModel : ObservableObject
         {
             int algorithms = BenchAlgorithms.Count(a => a.IsSelected);
             if (algorithms == 0) return "Выберите хотя бы один алгоритм.";
-            if (BenchRuns is not (>= 1 and <= 20)) return "Укажите от 1 до 20 прогонов.";
+            if (BenchRuns is not (>= 1 and <= 100)) return "Укажите от 1 до 100 прогонов.";
             if (ReadBenchLengths(out var lengths).Length > 0) return "";
             int total = algorithms * lengths.Length * BenchRuns.Value;
             return $"{algorithms} × {lengths.Length} × {BenchRuns} = {total} {RunsWord(total)}";
@@ -155,13 +156,18 @@ public partial class Task3ViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanRunBench))]
     private bool _benchRunning;
 
-    public bool CanRunBench => !BenchRunning && BenchRuns is >= 1 and <= 20 && BenchInput is not null
+    public bool CanRunBench => !BenchRunning && BenchRuns is >= 1 and <= 100 && BenchInput is not null
         && BenchAlgorithms.Any(a => a.IsSelected) && BenchLengthsError.Length == 0;
 
-    public Task3ViewModel(IReadOnlyList<IStringSortAlgorithm> algorithms, BenchmarkService benchmark, SettingsViewModel settings)
+    /// <summary>Замеры алгоритмов внутренней сортировки (второй подраздел страницы).</summary>
+    public ArrayBenchmarkViewModel Arrays { get; }
+
+    public Task3ViewModel(IReadOnlyList<IStringSortAlgorithm> algorithms, IReadOnlyList<ISortAlgorithm> arrayAlgorithms,
+        BenchmarkService benchmark, SettingsViewModel settings)
     {
         _benchmark = benchmark;
         Settings = settings;
+        Arrays = new ArrayBenchmarkViewModel(arrayAlgorithms, benchmark, settings);
         Algorithms = algorithms.Select(a => (ISortAlgorithmOption)new AlgorithmOption(a)).ToList();
         BenchAlgorithms = algorithms.Select(a => new BenchmarkAlgorithmChoice(a)).ToArray();
         foreach (var choice in BenchAlgorithms)

@@ -24,7 +24,7 @@
               <TextBlock Text="{Binding TapeCounts}" TextWrapping="Wrap" FontWeight="SemiBold"
                          IsVisible="{Binding TapeCounts, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
               <TextBlock Grid.Row="1" Classes="subtle" IsVisible="{Binding !Tapes.Count}" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" Text="Серии появятся после первого шага сортировки."/>
-              <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <ScrollViewer Grid.Row="1" x:Name="TapesScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible">
                 <controls:TapeItemsControl ItemsSource="{Binding Tapes}">
                   <controls:TapeItemsControl.MoveDurationMs>
                     <MultiBinding Converter="{StaticResource StepDuration}">
@@ -163,7 +163,7 @@
                     <TextBlock Text="{Binding PhaseText}" FontWeight="SemiBold" TextWrapping="Wrap"/>
                     <TextBlock Text="{Binding Comparisons, StringFormat='Сравнений: {0}'}"/>
                     <TextBlock Text="{Binding Moves, StringFormat='Перемещений: {0}'}"/>
-                    <TextBlock Text="Сравнение проверяет ключи двух записей. Перемещение — запись целой строки на ленту. Одна строка может учитываться несколько раз, если проходит через несколько слияний." TextWrapping="Wrap" Classes="subtle"/>
+                    <TextBlock Text="Сравнение проверяет ключи двух записей. Перемещение: запись целой строки на ленту. Одна строка может учитываться несколько раз, если проходит через несколько слияний." TextWrapping="Wrap" Classes="subtle"/>
                   </StackPanel>
                 </Grid>
               </TabItem>

@@ -9,6 +9,12 @@ public interface ISortAlgorithm
     string Description { get; }
     string Reference { get; }
 
-    /// <summary>Ленивая последовательность шагов. Алгоритм не зависит от UI.</summary>
-    IEnumerable<SortStep> GetSteps(int[] input);
+    /// <summary>
+    /// Ленивая последовательность шагов. Алгоритм не зависит от UI.
+    /// При snapshots=false шаги не содержат копий массива: дешёвый режим для замеров времени.
+    /// </summary>
+    IEnumerable<SortStep> GetSteps(int[] input, bool snapshots);
+
+    /// <summary>Обычный режим визуализации: каждый шаг содержит снимок массива.</summary>
+    IEnumerable<SortStep> GetSteps(int[] input) => GetSteps(input, true);
 }
