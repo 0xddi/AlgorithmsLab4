@@ -66,8 +66,8 @@ public partial class Task1ViewModel : ObservableObject
         string Position(int? position) => position switch
         {
             null => "нет",
-            int i when i > frame.Size => $"{i} (вне кучи)",
-            int i => $"{i} (число {values[i - 1]})",
+            int i when i >= frame.Size => $"{i} (вне кучи)",
+            int i => $"{i} (число {values[i]})",
         };
         return $"Размер кучи: {frame.Size}\nРодитель: {Position(frame.Parent)}\nЛевый ребёнок: {Position(frame.Left)}\nПравый ребёнок: {Position(frame.Right)}";
     }
@@ -156,7 +156,7 @@ public partial class Task1ViewModel : ObservableObject
         {
             if (!int.TryParse(parts[i], out arr[i]) || arr[i] < 0 || arr[i] > 999)
             {
-                InputError = $"Не удалось прочитать элемент №{i + 1}: «{parts[i]}». Введите целые числа 0–999 через запятую.";
+                InputError = $"Не удалось прочитать элемент с индексом {i}: «{parts[i]}». Введите целые числа 0–999 через запятую.";
                 return;
             }
         }
@@ -365,7 +365,7 @@ public partial class Task1ViewModel : ObservableObject
         else
         {
             StepDetail = step.Gap == 0 ? "" : step.IndexB < 0 ? $"Расстояние: {step.Gap}"
-                : $"Расстояние: {step.Gap}. Позиции {Math.Min(step.IndexA, step.IndexB) + 1} и {Math.Max(step.IndexA, step.IndexB) + 1}.";
+                : $"Расстояние: {step.Gap}. Позиции {Math.Min(step.IndexA, step.IndexB)} и {Math.Max(step.IndexA, step.IndexB)}.";
         }
     }
 
@@ -378,8 +378,8 @@ public partial class Task1ViewModel : ObservableObject
         if (step.Op == SortOpType.Swap) Swaps++;
         if (step.Op == SortOpType.Assign) Assignments++;
         string indices = step.IndexA >= 0 && step.IndexB >= 0
-            ? $"{step.IndexA + 1}, {step.IndexB + 1}"
-            : step.IndexA >= 0 ? $"{step.IndexA + 1}" : "";
+            ? $"{step.IndexA}, {step.IndexB}"
+            : step.IndexA >= 0 ? $"{step.IndexA}" : "";
         string values = step.IndexA >= 0 && step.IndexB >= 0
             ? $"{step.Values[step.IndexA]} ↔ {step.SavedKey ?? step.Values[step.IndexB]}"
             : step.IndexA >= 0 ? $"{step.Values[step.IndexA]}" : "";
