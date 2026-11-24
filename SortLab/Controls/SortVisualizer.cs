@@ -174,7 +174,7 @@ public class SortVisualizer : Control
 
         if (ActiveCall is { } call)
         {
-            var range = new Rect((call.Start - 1) * slotWidth, 4, (call.End - call.Start + 1) * slotWidth,
+            var range = new Rect(call.Start * slotWidth, 4, (call.End - call.Start + 1) * slotWidth,
                 topPad + labelSpace + plotHeight - 4);
             var ink = LabelBrush ?? Brushes.Gray;
             using (context.PushOpacity(0.10))
@@ -211,7 +211,7 @@ public class SortVisualizer : Control
                 var ft = Label(bar.Value);
                 if (showPositions)
                 {
-                    var position = Label(i + 1);
+                    var position = Label(i);
                     double center = (i + 0.5) * slotWidth;
                     context.DrawText(position, new Point(center - position.Width / 2, bounds.Height - bottomPad + 2));
                 }
@@ -278,6 +278,8 @@ public class SortVisualizer : Control
         StepMark.Swap => SwapBrush ?? Brushes.Red,
         StepMark.Sorted => SortedBrush ?? Brushes.Green,
         StepMark.Pivot or StepMark.HeapParent => PivotBrush ?? Brushes.Purple,
+        StepMark.LessThanPivot => Brushes.Teal,
+        StepMark.AtLeastPivot => Brushes.Peru,
         _ => NormalBrush ?? Brushes.SteelBlue,
     };
 

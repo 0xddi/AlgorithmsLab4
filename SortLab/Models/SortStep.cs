@@ -20,6 +20,8 @@ public enum StepMark
     Pivot,   // опорный элемент
     HeapParent,
     HeapChild,
+    LessThanPivot,
+    AtLeastPivot,
 }
 
 /// <summary>Один шаг алгоритма сортировки: снимок массива, подсветка и пояснение.</summary>
@@ -35,7 +37,7 @@ public sealed record SortStep(
     int Gap = 0,
     RangeFrame? Call = null);
 
-// Границы участков включительные, с единицы.
+// Границы участков включительные, с нуля.
 public sealed record RangeFrame(int Start, int End, RangeFrame? Caller = null, string Detail = "", string Status = "Сейчас");
 
 public sealed record RangeCard(string Status, int Start, int End, string Detail, bool IsCurrent = false)
@@ -43,10 +45,10 @@ public sealed record RangeCard(string Status, int Start, int End, string Detail,
     public string Title => $"{Status} · {(Start == End ? $"позиция {Start}" : $"позиции {Start}–{End}")}";
 }
 
-// Позиции на диаграмме начинаются с единицы.
+// Индексы элементов кучи начинаются с нуля.
 public sealed record HeapFrame(int Size, int? Parent = null)
 {
-    public int? Left => 2 * Parent;
+    public int? Left => 2 * Parent + 1;
     public int? Right => Left + 1;
 }
 

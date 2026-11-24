@@ -42,6 +42,14 @@
         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="8">
             <StackPanel Spacing="5" IsVisible="{Binding IsQuickSort}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Ellipse Width="10" Height="10" Fill="Teal"/>
+                <TextBlock Text="Меньше опорного"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Ellipse Width="10" Height="10" Fill="Peru"/>
+                <TextBlock Text="Не меньше опорного"/>
+              </StackPanel>
               <TextBlock Classes="h2" Text="Стек вызовов"/>
               <TextBlock Classes="subtle" Text="Верхняя карточка показывает текущий участок. Ниже видно, куда вернёмся." TextWrapping="Wrap"/>
               <TextBlock Text="{Binding CallStatus}" TextWrapping="Wrap"
@@ -63,12 +71,12 @@
             <TextBlock Classes="h2" Text="На этом шаге"/>
             <TextBlock Text="{Binding HeapVariables}" TextWrapping="Wrap"/>
             <TextBlock Classes="h2" Text="Позиции в куче"/>
-            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Номер под столбиком показывает позицию, число над ним показывает значение. Корень занимает позицию 1."/>
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Номер под столбиком показывает позицию, число над ним показывает значение. Корень занимает позицию 0."/>
             <TextBlock Text="Размер кучи: число активных элементов." TextWrapping="Wrap"/>
-            <TextBlock Text="Левый ребёнок: 2 × позиция родителя" TextWrapping="Wrap"/>
+            <TextBlock Text="Левый ребёнок: 2 × позиция родителя + 1" TextWrapping="Wrap"/>
             <TextBlock Text="Правый ребёнок: позиция левого ребёнка + 1" TextWrapping="Wrap"/>
-            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Детей записывают парами по уровням: у позиции 1 это 2 и 3, у позиции 2 это 4 и 5. Позиция больше размера кучи лежит вне кучи."/>
-            <TextBlock Text="Позиция родителя = целая часть (позиция ребёнка / 2)" TextWrapping="Wrap"/>
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Детей записывают парами по уровням: у позиции 0 это 1 и 2, у позиции 1 — 3 и 4. Индекс, равный размеру кучи или больший, лежит вне кучи."/>
+            <TextBlock Text="Позиция родителя = целая часть ((позиция ребёнка − 1) / 2)" TextWrapping="Wrap"/>
             <TextBlock Text="{Binding SelectedAlgorithm.Reference}" TextWrapping="Wrap"/>
             <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Целая часть: результат деления с отброшенным остатком."/>
           </StackPanel>

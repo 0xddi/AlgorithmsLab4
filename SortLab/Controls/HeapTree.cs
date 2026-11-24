@@ -151,7 +151,7 @@ public sealed class HeapTree : Control
                 _ => edge
             };
             bool travelling = t < 1 && i <= _origins.Length && _origins[i - 1] != Slot(i);
-            DrawNode(p, travelling ? node.Value.ToString() : $"{i}: {node.Value}", outline);
+            DrawNode(p, travelling ? node.Value.ToString() : $"{i - 1}: {node.Value}", outline);
         }
         if (_extracted is { } extracted && t < 1)
         {

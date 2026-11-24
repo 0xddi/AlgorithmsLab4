@@ -16,6 +16,8 @@ public sealed class QuickSortString : IStringSortAlgorithm
         Опорное слово берём из середины текущего участка. Сравниваем слова по символам слева направо до первого различия; если одно слово целиком совпадает с началом другого, короткое идёт раньше. Здесь порядок символов определяется их кодами.
 
         В [dog, ant, cat, cat, fox] опорное слово cat. После разделения слева стоит ant, посередине оба cat, справа dog и fox. Снова применяем то же правило к левой и правой группам, если в них больше одного слова. Оба cat уже на своих местах. Когда весь ряд готов, одинаковые слова стоят подряд и длина каждой такой группы даёт число повторений.
+
+        Сложность по времени (O большое, n — число слов, L — максимальная длина слова). Одно сравнение стоит до O(L). При сбалансированных разбиениях O(nL log n), в худшем случае O(n²L). Если все слова равны, хватает одного прохода O(nL).
         """;
 
     public IEnumerable<StringSortStep> GetSteps(string[] words, bool snapshots = true)
@@ -28,14 +30,14 @@ public sealed class QuickSortString : IStringSortAlgorithm
             var (left, right) = range;
             if (left >= right) continue;
             IEnumerable<RangeCard> PendingCards() => ranges.Select((r, index) =>
-                new RangeCard(index == 0 ? "Далее" : "Затем", r.Left + 1, r.Right + 1, ""));
+                new RangeCard(index == 0 ? "Далее" : "Затем", r.Left, r.Right, ""));
             int pivotIndex = left + (right - left) / 2;
             string pivot = c.A[pivotIndex];
             IReadOnlyList<RangeCard>? work = snapshots
-                ? [new RangeCard("Сейчас", left + 1, right + 1, $"Опорное слово «{pivot}».", true), .. PendingCards()]
+                ? [new RangeCard("Сейчас", left, right, $"Опорное слово «{pivot}».", true), .. PendingCards()]
                 : null;
             c.Mark(pivotIndex, StepMark.Pivot);
-            yield return c.S(SortOpType.Info, pivotIndex, -1, $"На участке от позиции {left + 1} до {right + 1} берём середину, позицию {pivotIndex + 1}. Опорное слово на ней: «{pivot}».") with { WorkCards = work };
+            yield return c.S(SortOpType.Info, pivotIndex, -1, $"На участке от позиции {left} до {right} берём середину, позицию {pivotIndex}. Опорное слово на ней: «{pivot}».") with { WorkCards = work };
             int low = left, high = right, i = left;
             while (i <= high)
             {
@@ -51,17 +53,17 @@ public sealed class QuickSortString : IStringSortAlgorithm
                         string reason = atEnd ? (word.Length == pivot.Length ? "Оба слова закончились одновременно и совпадают." : "Одно слово закончилось раньше и идёт первым.")
                             : equal ? "Символы одинаковы, проверяем следующую позицию."
                             : "Символы различаются, их коды определяют порядок.";
-                        yield return c.S(SortOpType.Info, i, pivotIndex, $"Позиция символа {letter + 1}. {reason}") with
+                        yield return c.S(SortOpType.Info, i, pivotIndex, $"Символ №{letter + 1}. {reason}") with
                         {
                             WorkCards = work,
-                            DetailTitle = $"Посимвольное сравнение · позиция {letter + 1}",
-                            Lanes = [WordLane.WithActiveLetter($"Слово с позиции {i + 1}", word, letter),
-                                WordLane.WithActiveLetter($"Опорное с позиции {pivotIndex + 1}", pivot, letter)]
+                            DetailTitle = $"Посимвольное сравнение · символ №{letter + 1}",
+                            Lanes = [WordLane.WithActiveLetter($"Слово с позиции {i}", word, letter),
+                                WordLane.WithActiveLetter($"Опорное с позиции {pivotIndex}", pivot, letter)]
                         };
                         if (!equal) break;
                     }
                 }
-                string explanation = $"Сравниваем «{c.A[i]}» на позиции {i + 1} с опорным «{pivot}» на позиции {pivotIndex + 1}. {ExplainOrder(c.A[i], pivot, order)}";
+                string explanation = $"Сравниваем «{c.A[i]}» на позиции {i} с опорным «{pivot}» на позиции {pivotIndex}. {ExplainOrder(c.A[i], pivot, order)}";
                 yield return c.S(SortOpType.Compare, i, pivotIndex, explanation) with { WorkCards = work };
                 if (i != pivotIndex) c.Mark(i, StepMark.Normal);
                 if (order == 0) { i++; continue; }
@@ -75,7 +77,7 @@ public sealed class QuickSortString : IStringSortAlgorithm
                 if (pivotIndex == from) pivotIndex = to;
                 else if (pivotIndex == to) pivotIndex = from;
                 c.Mark(pivotIndex, StepMark.Pivot);
-                yield return c.S(SortOpType.Swap, from, to, $"Слово «{c.A[to]}» должно стоять {(order < 0 ? "до" : "после")} опорного «{pivot}». Меняем его позицию {from + 1} с позицией {to + 1} у границы этой группы.") with { WorkCards = work };
+                yield return c.S(SortOpType.Swap, from, to, $"Слово «{c.A[to]}» должно стоять {(order < 0 ? "до" : "после")} опорного «{pivot}». Меняем его позицию {from} с позицией {to} у границы этой группы.") with { WorkCards = work };
                 c.Mark(from, StepMark.Normal);
                 c.Mark(to, StepMark.Normal);
                 c.Mark(pivotIndex, StepMark.Pivot);
@@ -100,7 +102,7 @@ public sealed class QuickSortString : IStringSortAlgorithm
             common++;
         string reason = common == word.Length || common == pivot.Length
             ? $"Слово «{(common == word.Length ? word : pivot)}» короче и совпадает с началом второго слова."
-            : $"Первое различие на позиции {common + 1}: у символа «{word[common]}» код {(int)word[common]}, у «{pivot[common]}» код {(int)pivot[common]}.";
+            : $"Первое различие у символа №{common + 1}: у символа «{word[common]}» код {(int)word[common]}, у «{pivot[common]}» код {(int)pivot[common]}.";
         return reason + (order < 0 ? " Помещаем слово в группу перед опорным." : " Помещаем слово в группу после опорного.");
     }
 }
@@ -110,15 +112,17 @@ public sealed class RadixSortString : IStringSortAlgorithm
     public string Name => "Поразрядная (Radix Sort MSD)";
     public string Reference =>
         """
-        Разряд: позиция символа, начиная с 1. Корзина объединяет слова с одним символом в этом разряде.
+        Разряд — порядковый номер символа в слове, начиная с 1. Корзина объединяет слова с одним символом в этом разряде.
 
         Корзина конца слова идёт первой, остальные идут по коду символа. Следующий разряд проверяем только в корзине с несколькими незавершёнными словами.
         """;
     public string Description =>
         """
-        Разряд: позиция символа в слове. MSD означает, что начинаем с первого символа. Корзина: группа слов с одинаковым символом на текущей позиции. Выписываем корзины по порядку кодов символов. Следующую позицию проверяем только внутри корзины, где ещё несколько слов.
+        Разряд — порядковый номер символа в слове. MSD означает, что начинаем с первого символа. Корзина: группа слов с одинаковым символом на текущей позиции. Выписываем корзины по порядку кодов символов. Следующую позицию проверяем только внутри корзины, где ещё несколько слов.
 
         В [bat, apple, bar, ba] сначала отделяем apple от слов на b. У оставшихся совпадает начало ba. На третьей позиции у ba уже конец слова, у bar стоит r, у bat стоит t. Корзину конца слова выписываем первой: apple, ba, bar, bat. Каждая запись слова из корзины обратно в массив даёт одну операцию размещения.
+
+        Сложность по времени (O большое, n — число слов, L — максимальная длина слова, b — максимальное число корзин на участке). Каждое слово участвует не более чем в L + 1 разрядах, с учётом конца слова. Корзины хранятся в упорядоченном словаре. Время поиска корзины до O(log(b + 1)), вся сортировка до O(n(L + 1) log(b + 1)).
         """;
 
     public IEnumerable<StringSortStep> GetSteps(string[] words, bool snapshots = true)
@@ -131,9 +135,9 @@ public sealed class RadixSortString : IStringSortAlgorithm
             var (start, count, depth) = group;
             if (count < 2) continue;
             IEnumerable<RangeCard> PendingCards() => pending.Select((g, index) =>
-                new RangeCard(index == 0 ? "Далее" : "Затем", g.Start + 1, g.Start + g.Count, $"Символ {g.Depth + 1}."));
+                new RangeCard(index == 0 ? "Далее" : "Затем", g.Start, g.Start + g.Count - 1, $"Символ {g.Depth + 1}."));
             IReadOnlyList<RangeCard> Work() =>
-                [new RangeCard("Сейчас", start + 1, start + count, $"Символ {depth + 1}.", true), .. PendingCards()];
+                [new RangeCard("Сейчас", start, start + count - 1, $"Символ {depth + 1}.", true), .. PendingCards()];
             var work = snapshots ? Work() : null;
 
             // -1 обозначает конец слова: короткое слово идёт перед своим продолжением.
@@ -142,7 +146,7 @@ public sealed class RadixSortString : IStringSortAlgorithm
             WordLane Input(int consumed) => new("Входной участок",
                 sourceWords.Skip(consumed).Select((word, i) => new WordCell(word, false, start + consumed + i)).ToArray());
             if (snapshots)
-                yield return c.S(SortOpType.Info, start, -1, $"Начинаем распределение по символу на позиции {depth + 1}.") with
+                yield return c.S(SortOpType.Info, start, -1, $"Начинаем распределение по символу №{depth + 1}.") with
                 { WorkCards = work, DetailTitle = "Распределение по корзинам", Lanes = [Input(0)] };
             for (int i = start; i < start + count; i++)
             {
@@ -154,10 +158,10 @@ public sealed class RadixSortString : IStringSortAlgorithm
                 {
                     c.Mark(i, StepMark.Compare);
                     yield return c.S(SortOpType.Info, i, -1,
-                        $"Слово «{word}» с позиции {i + 1} отправляем в корзину «{BucketLabel(key)}» по символу на позиции {depth + 1}.") with
+                        $"Слово «{word}» с позиции {i} отправляем в корзину «{BucketLabel(key)}» по символу №{depth + 1}.") with
                     {
                         WorkCards = work, DetailTitle = $"Символ {depth + 1} · распределение",
-                        Lanes = [Input(i - start + 1), WordLane.WithActiveLetter($"Слово с позиции {i + 1}", word, depth), .. ShowBuckets(buckets, sourceWords, start, key)]
+                        Lanes = [Input(i - start + 1), WordLane.WithActiveLetter($"Слово с позиции {i}", word, depth), .. ShowBuckets(buckets, sourceWords, start, key)]
                     };
                     c.Mark(i, StepMark.Normal);
                 }
@@ -166,8 +170,8 @@ public sealed class RadixSortString : IStringSortAlgorithm
             var buffer = new int?[count];
             WordLane ShowBuffer(int active, int consumed = 0) => new("Буфер · позиции в массиве",
                 buffer.Select((id, index) => index >= consumed && id is int source
-                    ? new WordCell($"{start + index + 1}: {sourceWords[source - start]}", index == active, source)
-                    : new WordCell($"{start + index + 1}: пусто")).ToArray());
+                    ? new WordCell($"{start + index}: {sourceWords[source - start]}", index == active, source)
+                    : new WordCell($"{start + index}: пусто")).ToArray());
             int output = 0;
             foreach (var (key, bucket) in buckets)
             {
@@ -176,7 +180,7 @@ public sealed class RadixSortString : IStringSortAlgorithm
                     var word = sourceWords[source - start];
                     buffer[output] = source;
                     if (snapshots)
-                        yield return c.S(SortOpType.Info, -1, -1, $"Переносим «{word}» из корзины «{BucketLabel(key)}» в буфер на позицию {start + output + 1}.") with
+                        yield return c.S(SortOpType.Info, -1, -1, $"Переносим «{word}» из корзины «{BucketLabel(key)}» в буфер на позицию {start + output}.") with
                         {
                             WorkCards = work, DetailTitle = $"Символ {depth + 1} · сборка буфера",
                             Lanes = [ShowBuffer(output), .. ShowBuckets(buckets, sourceWords, start, key, output + 1)]
@@ -195,13 +199,13 @@ public sealed class RadixSortString : IStringSortAlgorithm
                     string word = sourceWords[buffer[position - start]!.Value - start];
                     c.A[position] = word;
                     c.Mark(position, StepMark.Swap);
-                    yield return c.S(SortOpType.Assign, position, -1, $"Возвращаем «{word}» из буфера на позицию {position + 1} массива. {(key < 0 ? "Слово закончилось, дальнейших разрядов нет." : bucket.Count == 1 ? "В корзине одно слово, его место найдено." : $"В корзине «{label}» несколько слов, затем проверим символ на позиции {depth + 2}.")}") with
+                    yield return c.S(SortOpType.Assign, position, -1, $"Возвращаем «{word}» из буфера на позицию {position} массива. {(key < 0 ? "Слово закончилось, дальнейших разрядов нет." : bucket.Count == 1 ? "В корзине одно слово, его место найдено." : $"В корзине «{label}» несколько слов, затем проверим символ №{depth + 2}.")}") with
                     {
                         WorkCards = work,
                         DetailTitle = snapshots ? $"Символ {depth + 1} · запись в массив" : "",
                         Lanes = snapshots ? [ShowBuffer(-1, position - start + 1),
                             new WordLane("Записано в основной массив", buffer.Take(position - start + 1)
-                                .Select((id, j) => new WordCell($"{start + j + 1}: {c.A[start + j]}", start + j == position, id)).ToArray())] : null
+                                .Select((id, j) => new WordCell($"{start + j}: {c.A[start + j]}", start + j == position, id)).ToArray())] : null
                     };
                     c.Mark(position++, StepMark.Normal);
                 }

@@ -439,8 +439,8 @@ public partial class Task3ViewModel : ObservableObject
         if (step.Op == SortOpType.Compare) Comparisons++;
         if (step.Op is SortOpType.Assign or SortOpType.Swap) Moves++;
         string indices = step.IndexA >= 0 && step.IndexB >= 0
-            ? $"{step.IndexA + 1}, {step.IndexB + 1}"
-            : step.IndexA >= 0 ? $"{step.IndexA + 1}" : "";
+            ? $"{step.IndexA}, {step.IndexB}"
+            : step.IndexA >= 0 ? $"{step.IndexA}" : "";
         string values = step.IndexA >= 0 && step.IndexB >= 0
             ? $"«{step.Values[step.IndexA]}» ↔ «{step.Values[step.IndexB]}»"
             : step.IndexA >= 0 ? $"«{step.Values[step.IndexA]}»" : "";

@@ -86,6 +86,7 @@ public class WordSortVisualizer : Control
     private double _layoutW = -1, _contentHeight;
     private int _layoutCount = -1;
     private const double LabelFontSize = 16;
+    private const double IndexGap = 4;
     private double _chipH = 20;
     private readonly List<double> _widths = new();
     private readonly List<double> _xs = new();
@@ -191,14 +192,17 @@ public class WordSortVisualizer : Control
             var rect = new RoundedRect(new Rect(x, y, _widths[i], _chipH), Math.Min(5, _chipH / 2));
             var background = BrushFor(chip.Mark);
             context.DrawRectangle(background, null, rect);
-            if (activeRange is not null && i + 1 >= activeRange.Start && i + 1 <= activeRange.End)
+            if (activeRange is not null && i >= activeRange.Start && i <= activeRange.End)
                 context.DrawRectangle(null, rangePen, rect);
 
             var fg = background is ISolidColorBrush solid
                 ? ContrastingText(solid.Color)
                 : TextBrush ?? Brushes.Gray;
-            var ft = Label(chip.Text, fg);
-            context.DrawText(ft, new Point(x + PadX, y + (_chipH - ft.Height) / 2));
+            var index = Label($"{i}:", fg);
+            var word = Label(chip.Text, fg);
+            double textY = y + (_chipH - word.Height) / 2;
+            context.DrawText(index, new Point(x + PadX, textY));
+            context.DrawText(word, new Point(x + PadX + index.Width + IndexGap, textY));
         }
     }
 
@@ -266,10 +270,12 @@ public class WordSortVisualizer : Control
         _layoutCount = words.Count;
         _widths.Clear();
         double chipH = 0;
-        foreach (var w in words)
+        for (int i = 0; i < words.Count; i++)
         {
-            var ft = Label(w.Text, TextBrush ?? Brushes.Gray);
-            _widths.Add(ft.Width + PadX * 2);
+            var brush = TextBrush ?? Brushes.Gray;
+            var ft = Label(words[i].Text, brush);
+            var index = Label($"{i}:", brush);
+            _widths.Add(index.Width + IndexGap + ft.Width + PadX * 2);
             chipH = Math.Max(chipH, ft.Height + PadY * 2);
         }
         _chipH = chipH;
