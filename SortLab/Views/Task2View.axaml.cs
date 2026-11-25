@@ -1,5 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -25,6 +27,43 @@ public partial class Task2View : UserControl
         LegendLayout.Attach(this, LegendRail, LegendButton);
         DataContextChanged += (_, _) => WireColumns();
         TapesScroll.LayoutUpdated += (_, _) => RestoreTapesScroll();
+        // Своё упорядочивание результата: встроенная сортировка DataGrid не подходит,
+        // потому что колонки привязаны к индексатору записи, а не к свойствам.
+        ResultGrid.AddHandler(PointerPressedEvent, OnResultHeaderPressed, RoutingStrategies.Tunnel);
+    }
+
+    /// <summary>Клик по заголовку столбца результата упорядочивает строки по этому столбцу.</summary>
+    private void OnResultHeaderPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is not Task2ViewModel vm || vm.ResultTable is null) return;
+        if (e.GetCurrentPoint(ResultGrid).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed) return;
+
+        var header = (e.Source as Visual)?.GetSelfAndVisualAncestors()
+            .OfType<DataGridColumnHeader>()
+            .FirstOrDefault();
+        if (header is null) return;
+
+        int index = header.DataContext is DataGridColumn column ? ResultGrid.Columns.IndexOf(column) : -1;
+        if (index < 0 && header.GetVisualParent() is { } parent)
+            index = parent.GetVisualChildren().ToList().IndexOf(header);
+        if ((uint)index >= (uint)ResultGrid.Columns.Count) return;
+
+        vm.SortResultByColumn(index);
+        UpdateResultSortArrows(vm);
+        e.Handled = true;
+    }
+
+    /// <summary>Стрелка в заголовке показывает, по какому столбцу и в какую сторону упорядочен результат.</summary>
+    private void UpdateResultSortArrows(Task2ViewModel vm)
+    {
+        if (vm.ResultTable is not { } table) return;
+        for (int i = 0; i < ResultGrid.Columns.Count && i < table.Headers.Length; i++)
+        {
+            string header = table.Headers[i];
+            if (i == vm.ResultSortColumn)
+                header += vm.ResultSortDescending ? " ▼" : " ▲";
+            ResultGrid.Columns[i].Header = header;
+        }
     }
 
     private void RestoreTapesScroll()
@@ -68,7 +107,10 @@ public partial class Task2View : UserControl
             if (e.PropertyName == nameof(Task2ViewModel.Table) && vm.Table is not null)
                 BuildColumnsFor(SourceGrid, vm.Table.Headers);
             if (e.PropertyName == nameof(Task2ViewModel.ResultTable) && vm.ResultTable is not null)
+            {
                 BuildColumnsFor(ResultGrid, vm.ResultTable.Headers);
+                UpdateResultSortArrows(vm);
+            }
             if (e.PropertyName == nameof(Task2ViewModel.Tapes))
             {
                 // Запоминаем, где пользователь прокрутил ленты, до пересборки содержимого.

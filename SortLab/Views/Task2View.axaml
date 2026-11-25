@@ -85,7 +85,20 @@
             <DataGrid x:Name="SourceGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding Table.Rows}"/>
           </TabItem>
           <TabItem Header="Результат">
-            <DataGrid x:Name="ResultGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding ResultTable.Rows}"/>
+            <Grid RowDefinitions="Auto,*" RowSpacing="6">
+              <StackPanel Spacing="2" IsVisible="{Binding HasResult}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                  <TextBlock Classes="subtle" TextWrapping="Wrap" VerticalAlignment="Center"
+                             Text="Нажмите на заголовок столбца, чтобы упорядочить строки. Повторное нажатие меняет направление."/>
+                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding ResultSortStable, Mode=TwoWay}"
+                                OnContent="Устойчивая сортировка" OffContent="Неустойчивая сортировка"
+                                VerticalAlignment="Center" AutomationProperties.Name="Устойчивость сортировки"/>
+                </Grid>
+                <TextBlock Text="{Binding ResultSortInfo}" Classes="subtle" TextWrapping="Wrap"
+                           IsVisible="{Binding ResultSortInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+              </StackPanel>
+              <DataGrid Grid.Row="1" x:Name="ResultGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" ItemsSource="{Binding ResultTable.Rows}"/>
+            </Grid>
           </TabItem>
         </TabControl>
       </Border>

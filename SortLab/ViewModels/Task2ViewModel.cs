@@ -147,6 +147,28 @@ public partial class Task2ViewModel : ObservableObject
     [ObservableProperty]
     private bool _isPaused;
 
+    /// <summary>
+    /// Устойчивость интерактивной сортировки готового результата:
+    /// true — сортировка слиянием (равные ключи сохраняют порядок),
+    /// false — быстрая сортировка (равные ключи могут меняться местами).
+    /// </summary>
+    [ObservableProperty]
+    private bool _resultSortStable = true;
+
+    /// <summary>Пояснение к последнему упорядочиванию таблицы результата по столбцу.</summary>
+    [ObservableProperty]
+    private string _resultSortInfo = "";
+
+    private int _resultSortColumn = -1;
+    private bool _resultSortDescending;
+    private List<TableRecord>? _resultSortBase;
+
+    /// <summary>Индекс столбца, по которому сейчас упорядочен результат (−1: без сортировки).</summary>
+    public int ResultSortColumn => _resultSortColumn;
+
+    /// <summary>Направление текущего упорядочивания результата.</summary>
+    public bool ResultSortDescending => _resultSortDescending;
+
     public bool CanStart => Table is not null && SelectedKeyColumn is not null && !IsPlaying && !IsPaused;
     public bool CanPause => IsPlaying && !IsPaused;
     public bool CanStepBack => !IsPlaying && _currentStepNo > 0;
@@ -275,6 +297,10 @@ public partial class Task2ViewModel : ObservableObject
         HasResult = false;
         ResultTable = null;
         ResultInfo = "";
+        ResultSortInfo = "";
+        _resultSortColumn = -1;
+        _resultSortDescending = false;
+        _resultSortBase = null;
         _pendingVisual = null;
         _currentStepNo = 0;
         _finished = false;
@@ -497,6 +523,124 @@ public partial class Task2ViewModel : ObservableObject
             HasResult = true;
             ResultInfo = $"{rows.Count} записей, ключ «{_comparer.KeyColumn}», " +
                          (_comparer.Descending ? "по убыванию" : "по возрастанию") + FilterDescription(rows.Count);
+            // Исходный порядок результата: от него считаются все интерактивные переупорядочивания,
+            // поэтому переключение устойчивости даёт предсказуемый результат.
+            _resultSortBase = rows.ToList();
+            _resultSortColumn = -1;
+            _resultSortDescending = false;
+            ResultSortInfo = "";
+        }
+    }
+
+    /// <summary>
+    /// Упорядочить готовый результат по столбцу. Повторное нажатие на тот же столбец
+    /// меняет направление, нажатие на другой столбец начинает с возрастания.
+    /// Способ задаёт переключатель <see cref="ResultSortStable"/>.
+    /// </summary>
+    public void SortResultByColumn(int columnIndex)
+    {
+        if (ResultTable is not { } table) return;
+        if ((uint)columnIndex >= (uint)table.Headers.Length) return;
+
+        if (_resultSortColumn == columnIndex) _resultSortDescending = !_resultSortDescending;
+        else
+        {
+            _resultSortColumn = columnIndex;
+            _resultSortDescending = false;
+        }
+        ApplyResultSort();
+    }
+
+    partial void OnResultSortStableChanged(bool value) => ApplyResultSort();
+
+    private void ApplyResultSort()
+    {
+        if (ResultTable is not { } table) return;
+        if ((uint)_resultSortColumn >= (uint)table.Headers.Length) return;
+
+        var comparer = new RecordComparer(
+            table.Headers[_resultSortColumn], KeyType.Auto, _resultSortDescending, table.Headers);
+        // Всегда сортируем от исходного порядка результата, а не от текущего:
+        // так переключение устойчивости и повторные клики дают предсказуемый результат.
+        _resultSortBase ??= table.Rows.ToList();
+        var rows = _resultSortBase;
+        var sorted = ResultSortStable ? StableSort(rows, comparer) : UnstableSort(rows, comparer);
+
+        // Пересобираем содержимое коллекции: DataGrid надёжно обновляет строки
+        // по событиям Reset/Add, тогда как точечные замены оставляли старые значения.
+        table.Rows.Clear();
+        foreach (var row in sorted) table.Rows.Add(row);
+
+        ResultSortInfo = $"Столбец «{table.Headers[_resultSortColumn]}», " +
+                         (_resultSortDescending ? "по убыванию" : "по возрастанию") + ", " +
+                         (ResultSortStable ? "устойчивая сортировка слиянием" : "неустойчивая быстрая сортировка") +
+                         $". Строк: {table.Rows.Count}.";
+    }
+
+    /// <summary>Устойчивая сортировка слиянием: при равенстве ключей первым идёт левый элемент.</summary>
+    private static List<TableRecord> StableSort(List<TableRecord> rows, IComparer<TableRecord> comparer)
+    {
+        if (rows.Count < 2) return rows;
+        var a = rows.ToArray();
+        var buffer = new TableRecord[a.Length];
+        MergeSort(a, buffer, 0, a.Length - 1, comparer);
+        return a.ToList();
+    }
+
+    private static void MergeSort(TableRecord[] a, TableRecord[] buffer, int left, int right,
+        IComparer<TableRecord> comparer)
+    {
+        if (left >= right) return;
+        int mid = left + (right - left) / 2;
+        MergeSort(a, buffer, left, mid, comparer);
+        MergeSort(a, buffer, mid + 1, right, comparer);
+
+        int i = left, j = mid + 1, k = left;
+        while (i <= mid && j <= right)
+            buffer[k++] = comparer.Compare(a[i], a[j]) <= 0 ? a[i++] : a[j++];
+        while (i <= mid) buffer[k++] = a[i++];
+        while (j <= right) buffer[k++] = a[j++];
+        Array.Copy(buffer, left, a, left, right - left + 1);
+    }
+
+    /// <summary>
+    /// Неустойчивая быстрая сортировка (схема Хоара). Равные ключи при разбиении
+    /// меняются местами, поэтому исходный порядок одинаковых строк не сохраняется.
+    /// </summary>
+    private static List<TableRecord> UnstableSort(List<TableRecord> rows, IComparer<TableRecord> comparer)
+    {
+        var a = rows.ToArray();
+        QuickSort(a, 0, a.Length - 1, comparer);
+        return a.ToList();
+    }
+
+    private static void QuickSort(TableRecord[] a, int lo, int hi, IComparer<TableRecord> comparer)
+    {
+        while (lo < hi)
+        {
+            int mid = lo + (hi - lo) / 2;
+            (a[lo], a[mid]) = (a[mid], a[lo]);
+            var pivot = a[lo];
+            int i = lo - 1, j = hi + 1;
+            while (true)
+            {
+                do i++; while (comparer.Compare(a[i], pivot) < 0);
+                do j--; while (comparer.Compare(a[j], pivot) > 0);
+                if (i >= j) break;
+                (a[i], a[j]) = (a[j], a[i]);
+            }
+
+            // Меньший участок разбираем рекурсией, больший циклом: глубина стека O(log n).
+            if (j - lo < hi - j)
+            {
+                QuickSort(a, lo, j, comparer);
+                lo = j + 1;
+            }
+            else
+            {
+                QuickSort(a, j + 1, hi, comparer);
+                hi = j;
+            }
         }
     }
 
